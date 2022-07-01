@@ -1,0 +1,6 @@
+# Jetbrains configuration files
+.idea/
+*.iml
+
+# Production
+build/
