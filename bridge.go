@@ -1,7 +1,18 @@
 package main
 
+import (
+	"context"
+)
+
 // Bridge struct
 type Bridge struct {
+	ctx context.Context
+}
+
+// startup is called at application startup
+func (a *Bridge) startup(ctx context.Context) {
+	// Perform your setup here
+	a.ctx = ctx
 }
 
 // InitBridge creates a new Bridge application struct
