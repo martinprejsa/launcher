@@ -12,14 +12,13 @@ import (
 var assets embed.FS
 
 func main() {
-	// Create an instance of the bridge structure
 	bridge := InitBridge()
 	log := logger.NewDefaultLogger()
 
-	options := &options.App{
+	opts := &options.App{
 		Title:            "Genecraft Launcher",
 		Width:            1024,
-		Height:           768,
+		Height:           576,
 		Assets:           assets,
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        bridge.startup,
@@ -27,8 +26,7 @@ func main() {
 			bridge,
 		},
 	}
-
-	err := wails.Run(options)
+	err := wails.Run(opts)
 
 	if err != nil {
 		log.Error(fmt.Sprintf("failed to initialize application: %s", err))
