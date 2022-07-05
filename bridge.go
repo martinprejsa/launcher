@@ -39,6 +39,6 @@ func (a *Bridge) GetWardrobeData() string {
 }
 
 func (a *Bridge) Authenticate() (ProfileInfo, error) {
-	_, _ = api.MSGetAccessToken() //TODO: implement
+	_, _ = api.GetMinecraftToken() //TODO: implement
 	return ProfileInfo{}, nil
 }
