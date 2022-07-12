@@ -1,4 +1,4 @@
-package api
+package microsoft
 
 import (
 	"bytes"
@@ -9,6 +9,24 @@ import (
 	"io/ioutil"
 	"net/http"
 )
+
+type MinecraftProfile struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Skins []MinecraftSkin
+	Capes []MinecraftCape
+}
+
+type MinecraftSkin struct {
+	ID      string `json:"id"`
+	State   string `json:"state"`
+	URL     string `json:"url"`
+	Variant string `json:"variant"`
+	Alias   string `json:"alias"`
+}
+
+type MinecraftCape struct {
+}
 
 type xblResponse struct {
 	IssueInstant  string
@@ -22,6 +40,10 @@ type xblResponseDisplayClaims struct {
 }
 
 const msalClientId = "048f6903-f7d2-47b7-8d7d-47a2fa08b0f7"
+
+func GetMinecraftProfile() (MinecraftProfile, error) {
+	return MinecraftProfile{}, nil
+}
 
 func GetMinecraftToken() (string, error) {
 	publicClientApp, err := public.New(msalClientId, public.WithAuthority("https://login.microsoftonline.com/consumers"))
@@ -98,6 +120,7 @@ func xblAuth(accessToken string) (string, error) {
 }
 
 func minecraftAuth(xstx string, uhs string) string {
+	//todo verify xstx
 	body := map[string]interface{}{}
 
 	body["identityToken"] = "XBL3.0 x=" + uhs + ";" + xstx

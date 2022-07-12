@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"launcher/api"
+	"launcher/compatibility"
 )
 
 // Bridge struct
@@ -13,6 +14,17 @@ type Bridge struct {
 type ProfileInfo struct {
 	Username       string `json:"username"`
 	ProfilePicture string `json:"profile_picture"`
+}
+
+type HardwareInfo struct {
+	MemorySize int
+}
+
+type ClientSettings struct {
+	KeepOpen         bool
+	Memory           int
+	ResolutionWidth  int
+	ResolutionHeight int
 }
 
 // startup is called at application startup
@@ -39,6 +51,16 @@ func (a *Bridge) GetWardrobeData() string {
 }
 
 func (a *Bridge) Authenticate() (ProfileInfo, error) {
-	_, _ = api.GetMinecraftToken() //TODO: implement
+	_, _ = microsoft.GetMinecraftToken() //TODO: implement
 	return ProfileInfo{}, nil
+}
+
+func (a *Bridge) getHardwareInfo() HardwareInfo {
+	return HardwareInfo{
+		compatibility.GetMemorySize(),
+	}
+}
+
+func (a *Bridge) LaunchGame(settings ClientSettings) {
+
 }
