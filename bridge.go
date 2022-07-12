@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/pkg/errors"
 	"launcher/api"
 	"launcher/compatibility"
 )
@@ -51,8 +52,15 @@ func (a *Bridge) GetWardrobeData() string {
 }
 
 func (a *Bridge) Authenticate() (ProfileInfo, error) {
-	_, _ = microsoft.GetMinecraftToken() //TODO: implement
-	return ProfileInfo{}, nil
+	rsp, err := microsoft.MinecraftAuth()
+	if err != nil {
+		return ProfileInfo{}, errors.New("failed to authenticate")
+	}
+	profile, err := rsp.GetMinecraftProfile()
+	if err != nil {
+		return ProfileInfo{}, errors.New("failed to obtain minecraft profile")
+	}
+	return ProfileInfo{profile.Name, ""}, nil
 }
 
 func (a *Bridge) getHardwareInfo() HardwareInfo {

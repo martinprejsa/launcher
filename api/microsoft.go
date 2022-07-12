@@ -4,11 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/AzureAD/microsoft-authentication-library-for-go/apps/public"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 )
+
+type MinecraftAuthHandle struct {
+	accessToken string
+}
 
 type MinecraftProfile struct {
 	ID    string `json:"id"`
@@ -26,6 +31,10 @@ type MinecraftSkin struct {
 }
 
 type MinecraftCape struct {
+	ID    string `json:"id"`
+	State string `json:"state"`
+	URL   string `json:"url"`
+	Alias string `json:"alias"`
 }
 
 type xblResponse struct {
@@ -41,25 +50,50 @@ type xblResponseDisplayClaims struct {
 
 const msalClientId = "048f6903-f7d2-47b7-8d7d-47a2fa08b0f7"
 
-func GetMinecraftProfile() (MinecraftProfile, error) {
+func (h *MinecraftAuthHandle) GetMinecraftProfile() (MinecraftProfile, error) {
+	req, _ := http.NewRequest("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
+	req.Header.Set("Authorization", "Bearer "+h.accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return MinecraftProfile{}, err
+	}
+
+	b, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(b))
+	var profile MinecraftProfile
+	err = json.Unmarshal(b, &profile)
+	if err != nil {
+		return MinecraftProfile{}, errors.New("couldn't retrieve the minecraft profile") // user doesnt own the game
+	}
+	fmt.Println(profile)
+
 	return MinecraftProfile{}, nil
 }
 
-func GetMinecraftToken() (string, error) {
+func MinecraftAuth() (MinecraftAuthHandle, error) {
 	publicClientApp, err := public.New(msalClientId, public.WithAuthority("https://login.microsoftonline.com/consumers"))
 	if err != nil {
-		return "", errors.Errorf("failed to initialize MSAL client app: %s", err)
+		return MinecraftAuthHandle{}, errors.Errorf("failed to initialize MSAL client app: %s", err)
 	}
 	//TODO: read from cache
 	interactive, err := publicClientApp.AcquireTokenInteractive(context.Background(), []string{"XboxLive.signin"})
 	if err != nil {
-		return "", errors.Errorf("token aquisiton failed: %s", err)
+		return MinecraftAuthHandle{}, errors.Errorf("token aquisiton failed: %s", err)
 	}
 
-	return xblAuth(interactive.AccessToken)
+	token, err := auth(interactive.AccessToken)
+	if !verifyGameOwnership(token) {
+		return MinecraftAuthHandle{}, errors.New("failed to verify game ownership")
+	}
+	return MinecraftAuthHandle{token}, err
 }
 
-func xblAuth(accessToken string) (string, error) {
+func verifyGameOwnership(token string) bool {
+	return true //TODO implement
+}
+
+func auth(accessToken string) (string, error) {
 	data := map[string]interface{}{
 		"RelyingParty": "http://auth.xboxlive.com",
 		"TokenType":    "JWT",
@@ -120,7 +154,6 @@ func xblAuth(accessToken string) (string, error) {
 }
 
 func minecraftAuth(xstx string, uhs string) string {
-	//todo verify xstx
 	body := map[string]interface{}{}
 
 	body["identityToken"] = "XBL3.0 x=" + uhs + ";" + xstx
