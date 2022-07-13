@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/AzureAD/microsoft-authentication-library-for-go/apps/public"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -60,13 +59,11 @@ func (h *MinecraftAuthHandle) GetMinecraftProfile() (MinecraftProfile, error) {
 	}
 
 	b, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(b))
 	var profile MinecraftProfile
 	err = json.Unmarshal(b, &profile)
 	if err != nil {
 		return MinecraftProfile{}, errors.New("couldn't retrieve the minecraft profile") // user doesnt own the game
 	}
-	fmt.Println(profile)
 
 	return MinecraftProfile{}, nil
 }

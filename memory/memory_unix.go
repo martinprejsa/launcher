@@ -1,4 +1,4 @@
-package compatibility
+package memory
 
 import (
 	"bufio"
@@ -7,11 +7,12 @@ import (
 	"strings"
 )
 
-func GetMemorySize() int {
+func GetMemoryTotal() int {
 	file, err := os.Open("/proc/meminfo")
 	if err != nil {
 		return -1
 	}
+	defer file.Close()
 	in := bufio.NewReader(file)
 	line, err := in.ReadString('\n')
 	if err != nil {

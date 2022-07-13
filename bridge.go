@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/pkg/errors"
 	"launcher/api"
-	"launcher/compatibility"
+	"launcher/memory"
 )
 
 // Bridge struct
@@ -65,7 +65,7 @@ func (a *Bridge) Authenticate() (ProfileInfo, error) {
 
 func (a *Bridge) getHardwareInfo() HardwareInfo {
 	return HardwareInfo{
-		compatibility.GetMemorySize(),
+		memory.GetMemoryTotal(),
 	}
 }
 

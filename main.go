@@ -27,7 +27,6 @@ func main() {
 		},
 	}
 
-	bridge.Authenticate()
 	err := wails.Run(opts)
 
 	if err != nil {
