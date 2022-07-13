@@ -1,6 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"launcher/game/remote"
+)
+
+/*
+import (
 	"embed"
 	"fmt"
 	"github.com/wailsapp/wails/v2"
@@ -27,9 +33,20 @@ func main() {
 		},
 	}
 
+
+
 	err := wails.Run(opts)
 
 	if err != nil {
 		log.Error(fmt.Sprintf("failed to initialize application: %s", err))
 	}
+}
+
+*/
+
+func main() {
+	mf, _ := remote.GetManifest()
+	ver, _ := mf.GetLatestVersion()
+	obj, _ := ver.GetAssets()
+	fmt.Println(obj)
 }

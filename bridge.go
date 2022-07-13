@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"github.com/pkg/errors"
-	"launcher/api"
+	"launcher/api/microsoft"
 	"launcher/memory"
 )
 

@@ -1,4 +1,4 @@
-package launcher
+package game
 
 type LaunchTask struct {
 	JavaBin     string

@@ -1,4 +1,4 @@
-package launcher
+package game
 
 import "github.com/pkg/errors"
 
@@ -25,7 +25,7 @@ func Verify() bool {
 
 func Start(options LaunchOptions) error {
 	if !Verify() {
-		return errors.New("failed to verify game files")
+		return errors.New("failed to verify game remote")
 	} else {
 		return nil
 	}
