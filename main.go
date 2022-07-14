@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"launcher/game/remote"
+	"launcher/game"
 )
 
 /*
@@ -45,8 +44,9 @@ func main() {
 */
 
 func main() {
-	mf, _ := remote.GetManifest()
-	ver, _ := mf.GetLatestVersion()
-	obj, _ := ver.GetAssets()
-	fmt.Println(obj)
+	err := game.Install("/home/martin/.genecraft", "1.19")
+
+	if err != nil {
+		panic(err)
+	}
 }

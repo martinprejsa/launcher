@@ -2,12 +2,16 @@ package remote
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 const versionManifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
+const resourceUrl = "http://resources.download.minecraft.net/%s/%s"
 
 type Manifest struct {
 	Latest struct {
@@ -104,6 +108,33 @@ func (v *Version) GetAssets() (map[string]Asset, error) {
 	return ret.Objects, nil
 }
 
-func (a *Asset) Download() {
+func (a *Asset) Download(dir string, name string) error {
+	r, err := http.Get(fmt.Sprintf(resourceUrl, a.Hash[0:1], a.Hash))
+	if err != nil {
+		return err
+	}
+	//TODO: gzip
 
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	h, err := os.Create(filepath.Join(dir, name))
+	if err != nil {
+		return err
+	}
+	defer h.Close()
+
+	_, err = h.Write(b)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

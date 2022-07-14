@@ -1,6 +1,10 @@
 package game
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+	"io/fs"
+	"os"
+)
 
 type LaunchOptions struct {
 	JavaBin      string
@@ -20,6 +24,15 @@ type LaunchOptions struct {
 }
 
 func Verify() bool {
+	//TODO path
+	if _, err := os.Stat("/home/martin/.genecraft/launcher"); os.IsNotExist(err) {
+		err := os.MkdirAll("/home/martin/.genecraft/launcher", fs.ModeDir)
+		if err != nil {
+			return false
+		}
+
+	}
+
 	return true
 }
 
