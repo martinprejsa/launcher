@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"io"
 	"launcher/game/remote"
@@ -25,7 +26,7 @@ func Install(path string, version string) error {
 		return err
 	}
 
-	downloadAssets(path)
+	downloadMojangFiles(path)
 
 	return nil
 }
@@ -68,7 +69,7 @@ func InstallFabric(installer string, dir string, version string) error {
 	return nil
 }
 
-func downloadAssets(dir string) error {
+func downloadMojangFiles(dir string) error {
 	d := filepath.Join(dir, "assets")
 	if _, err := os.Stat(d); err != nil {
 		err := os.MkdirAll(d, os.ModePerm)
@@ -80,9 +81,22 @@ func downloadAssets(dir string) error {
 	mf, _ := remote.GetManifest()
 	ver, _ := mf.GetLatestVersion()
 	asts, _ := ver.GetAssets()
+	var counter = 1
 	for name, asset := range asts {
+		fmt.Printf("asset %s: %d/%d\n", name, counter, len(asts))
 		err := asset.Download(d, name)
-		return err
+		if err != nil {
+			return err
+		}
+		counter++
+	}
+
+	for _, library := range ver.Libraries {
+		err := library.Download(dir)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
 	}
 	return nil
 }
