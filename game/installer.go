@@ -83,20 +83,22 @@ func downloadMojangFiles(dir string) error {
 	asts, _ := ver.GetAssets()
 	var counter = 1
 	for name, asset := range asts {
-		fmt.Printf("asset %s: %d/%d\n", name, counter, len(asts))
-		err := asset.Download(d, name)
-		if err != nil {
-			return err
+		var download = func() {
+			res, _ := asset.Download(d, name)
+			fmt.Printf("[%d/%d] ASSET: %s %s \n", counter, len(asts), remote.CodeToString(res), name) //TODO debug print, goroutines
+			counter++
 		}
-		counter++
+
+		download()
 	}
 
-	for _, library := range ver.Libraries {
-		err := library.Download(dir)
+	for i, library := range ver.Libraries {
+		res, err := library.Download(dir)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
+		fmt.Printf("[%d/%d] LIBRARY: %s %s \n", i+1, len(ver.Libraries), remote.CodeToString(res), library.Name) //TODO debug print
 	}
 	return nil
 }

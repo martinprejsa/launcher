@@ -71,18 +71,27 @@ type assetIndex struct {
 	Objects map[string]Asset `json:"objects"`
 }
 
-func receiveJSONObject(address string, a any) error {
-	get, err := http.Get(address)
-	if err != nil {
-		return err
-	}
+type ResourceStatus int8
 
-	b, err := io.ReadAll(get.Body)
-	if err != nil {
-		return err
-	}
+const (
+	Skipped     ResourceStatus = 0
+	Downloaded  ResourceStatus = 1
+	NotRequired ResourceStatus = 2
+	Failed      ResourceStatus = 3
+)
 
-	return json.Unmarshal(b, a)
+func CodeToString(code ResourceStatus) string {
+	if code == Skipped {
+		return "SKIPPED"
+	} else if code == Downloaded {
+		return "DOWNLOADED"
+	} else if code == NotRequired {
+		return "NOT REQUIRED"
+	} else if code == Failed {
+		return "FAILED"
+	} else {
+		return "UNKNOWN CODE"
+	}
 }
 
 func GetManifest() (Manifest, error) {
@@ -117,38 +126,44 @@ func (v *Version) GetAssets() (map[string]Asset, error) {
 	return ret.Objects, nil
 }
 
-func (a *Asset) Download(dir string, name string) error {
-	r, err := http.Get(fmt.Sprintf(resourceUrl, a.Hash[0:1], a.Hash))
+func (a *Asset) Download(dir string, name string) (ResourceStatus, error) {
+	if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
+		if checkHash(filepath.Join(dir, name), a.Hash) {
+			return Skipped, nil // Already exists, skip
+		}
+	}
+
+	r, err := http.Get(fmt.Sprintf(resourceUrl, a.Hash[0:2], a.Hash))
 	if err != nil {
-		return err
+		return Failed, err
 	}
 	//TODO: gzip
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		return err
+		return Failed, err
 	}
 
 	err = os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), os.ModePerm)
 	if err != nil {
-		return err
+		return Failed, err
 	}
 
 	h, err := os.Create(filepath.Join(dir, name))
 	if err != nil {
-		return err
+		return Failed, err
 	}
 	defer h.Close()
 	//TODO check size
 	_, err = h.Write(b)
 	if err != nil {
-		return err
+		return Failed, err
 	}
 
-	return nil
+	return Downloaded, nil
 }
 
-func (lib *Library) Download(dir string) error {
+func (lib *Library) Download(dir string) (ResourceStatus, error) {
 	dir = filepath.Join(dir, "libraries")
 	var skip = false
 	for _, rule := range lib.Rules {
@@ -164,62 +179,75 @@ func (lib *Library) Download(dir string) error {
 	}
 
 	if skip {
-		return nil // Not required on this system, skip
-	}
-
-	checkHash := func() bool {
-		f, err := os.Open(filepath.Join(dir, lib.Downloads.Artifact.Path))
-		if err == nil {
-			defer f.Close()
-			h := sha1.New()
-			if _, err := io.Copy(h, f); err == nil {
-				str := fmt.Sprintf("%x", h.Sum(nil))
-				if str == lib.Downloads.Artifact.SHA1 {
-					return true // Already exists, skip
-				}
-			}
-		}
-		return false
+		return NotRequired, nil // Not required on this system, skip
 	}
 
 	if _, err := os.Stat(filepath.Join(dir, lib.Downloads.Artifact.Path)); err == nil {
-		if checkHash() {
-			return nil
+		if checkHash(filepath.Join(dir, lib.Downloads.Artifact.Path), lib.Downloads.Artifact.SHA1) {
+			return Skipped, nil // Already exists, skip
 		}
 	}
 
 	r, err := http.Get(lib.Downloads.Artifact.Url)
 	if err != nil {
-		return err
+		return Failed, err
 	}
 
 	//TODO: gzip
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		return err
+		return Failed, err
 	}
 
 	err = os.MkdirAll(filepath.Dir(filepath.Join(dir, lib.Downloads.Artifact.Path)), os.ModePerm)
 	if err != nil {
-		return err
+		return Failed, err
 	}
 
 	h, err := os.Create(filepath.Join(dir, lib.Downloads.Artifact.Path))
 	if err != nil {
-		return err
+		return Failed, err
 	}
 	defer h.Close()
 
 	_, err = h.Write(b)
 
-	if !checkHash() {
-		return errors.New("failed to verify checksum of downloaded library: " + lib.Name)
+	if !checkHash(filepath.Join(dir, lib.Downloads.Artifact.Path), lib.Downloads.Artifact.SHA1) {
+		return Failed, errors.New("failed to verify checksum of downloaded library: " + lib.Name)
 	}
 
+	if err != nil {
+		return Failed, err
+	}
+	return Downloaded, nil
+}
+
+func receiveJSONObject(address string, a any) error {
+	get, err := http.Get(address)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	b, err := io.ReadAll(get.Body)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(b, a)
+}
+
+func checkHash(path string, hash string) bool {
+	f, err := os.Open(path)
+	if err == nil {
+		defer f.Close()
+		h := sha1.New()
+		if _, err := io.Copy(h, f); err == nil {
+			str := fmt.Sprintf("%x", h.Sum(nil))
+			if str == hash {
+				return true
+			}
+		}
+	}
+	return false
 }
