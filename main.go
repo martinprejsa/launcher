@@ -1,11 +1,10 @@
 package main
 
 import (
-	"launcher/game"
+	"launcher/manager"
 )
 
-/*
-import (
+/* import (
 	"embed"
 	"fmt"
 	"github.com/wailsapp/wails/v2"
@@ -32,21 +31,14 @@ func main() {
 		},
 	}
 
-
-
 	err := wails.Run(opts)
 
 	if err != nil {
 		log.Error(fmt.Sprintf("failed to initialize application: %s", err))
 	}
-}
-
-*/
+} */
 
 func main() {
-	err := game.Install("/home/martin/.genecraft", "1.19")
+	manager.CreateProfile("/home/martin/.genecraft/launcher/", "none")
 
-	if err != nil {
-		panic(err)
-	}
 }

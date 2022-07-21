@@ -62,7 +62,7 @@ func (h *MinecraftAuthHandle) GetMinecraftProfile() (MinecraftProfile, error) {
 	var profile MinecraftProfile
 	err = json.Unmarshal(b, &profile)
 	if err != nil {
-		return MinecraftProfile{}, errors.New("couldn't retrieve the minecraft profile") // user doesnt own the game
+		return MinecraftProfile{}, errors.New("couldn't retrieve the minecraft profile") // user doesnt own the game-legacy
 	}
 
 	return MinecraftProfile{}, nil
@@ -81,7 +81,7 @@ func MinecraftAuth() (MinecraftAuthHandle, error) {
 
 	token, err := auth(interactive.AccessToken)
 	if !verifyGameOwnership(token) {
-		return MinecraftAuthHandle{}, errors.New("failed to verify game ownership")
+		return MinecraftAuthHandle{}, errors.New("failed to verify game-legacy ownership")
 	}
 	return MinecraftAuthHandle{token}, err
 }
