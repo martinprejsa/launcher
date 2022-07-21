@@ -6,8 +6,10 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 const versionManifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
@@ -65,8 +67,22 @@ type Asset struct {
 	Hash string `json:"hash"`
 	Size int64  `json:"size"`
 }
-type assetIndex struct {
-	Objects map[string]Asset `json:"objects"`
+
+type LaunchPlaceholders struct {
+	NativesDirectory string `json:"natives_directory"`
+	LauncherName     string `json:"launcher_name"`
+	LauncherVersion  string `json:"launcher_version"`
+	Username         string `json:"auth_player_name"`
+	Version          string `json:"version_name"`
+	GameDir          string `json:"game_directory"`
+	AssetDir         string `json:"assets_root"`
+	AssetIndex       string `json:"assets_index_name"`
+	UUID             string `json:"auth_uuid"`
+	AccessToken      string `json:"auth_access_token"`
+	ClientID         string `json:"clientid"`
+	XUID             string `json:"auth_xuid"`
+	UserType         string `json:"user_type"`
+	VersionType      string `json:"version_type"`
 }
 
 func GetManifest() (Manifest, error) {
@@ -99,13 +115,33 @@ func (v *Version) GetAssets() (map[string]Asset, error) {
 	}
 	return ret.Objects, nil
 }
-func (v *Version) CreateCommandLine() (string, string) {
-	var jvm string
-	var game string
+
+func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlaceholders, extraLibs []string) ([]string, []string) {
+	var jvm []string
+	var game []string
+
+	replacePlaceholders := func(s string) string {
+		rpl := func(s string, key string, value string) string {
+			return strings.Replace(s, fmt.Sprintf("${%s}", key), value, -1)
+		}
+		if strings.HasPrefix(s, "--xuid") {
+			return "" //FIXME remove
+		}
+		if strings.HasPrefix(s, "--clientId") {
+			return "" //FIXME remove
+		}
+
+		r := reflect.ValueOf(placeholders)
+		t := reflect.TypeOf(placeholders)
+		for i := 0; i < r.NumField(); i++ {
+			s = rpl(s, t.Field(i).Tag.Get("json"), r.Field(i).Interface().(string))
+		}
+		return rpl(s, "classpath", strings.Join(append(append(v.GetLibraryPaths(filepath.Join(placeholders.GameDir, "libraries")), extraLibs...), gameJar), ":"))
+	}
 
 	for _, a := range v.Arguments.JVM {
 		if reflect.TypeOf(a).Kind() == reflect.String {
-			jvm += fmt.Sprintf(" %s", a.(string))
+			jvm = append(jvm, replacePlaceholders(a.(string)))
 		} else if reflect.TypeOf(a).Kind() == reflect.Map {
 			b, _ := json.Marshal(a.(map[string]interface{})["rules"])
 			var rules []Rule
@@ -115,28 +151,44 @@ func (v *Version) CreateCommandLine() (string, string) {
 					val := a.(map[string]interface{})["value"]
 					if reflect.TypeOf(val).Kind() == reflect.Slice {
 						for _, str := range val.([]interface{}) {
-							jvm += fmt.Sprintf(" %s", str.(string))
+							jvm = append(jvm, replacePlaceholders(str.(string)))
 						}
 					} else {
-						jvm += fmt.Sprintf(" %s", val.(string))
+						jvm = append(jvm, replacePlaceholders(val.(string)))
 					}
 				}
 			}
 		}
 	}
 
-	jvm += " -DFabricMcEmu= net.minecraft.client.main.Main"
+	jvm = append(jvm, "-DFabricMcEmu= net.minecraft.client.main.Main") //TODO: dynamic ADD FABRIC JVM OPT
 	//TODO logging
 
 	for _, a := range v.Arguments.Game {
 		if reflect.TypeOf(a).Kind() == reflect.String {
-			game += fmt.Sprintf(" %s", a.(string))
+			game = append(game, replacePlaceholders(a.(string)))
 		}
 	}
 
-	// ADD FABRIC JVM OPT
 	return jvm, game
 }
+
+func (v *Version) GetLibraryPaths(dir string) []string {
+	var ret []string
+	for _, library := range v.Libraries {
+		var cont bool = true
+		for _, rule := range library.Rules {
+			if !rule.Complies() {
+				cont = false
+			}
+		}
+		if cont {
+			ret = append(ret, filepath.Join(dir, library.Downloads.Artifact.Path))
+		}
+	}
+	return ret
+}
+
 func (r *Rule) Complies() bool {
 	if runtime.GOOS == r.OS.Name {
 		if r.OS.Arch != "" {
@@ -161,6 +213,11 @@ func (r *Rule) Complies() bool {
 	} else {
 		return false
 	}
+}
+
+/* PRIVATE REGION */
+type assetIndex struct {
+	Objects map[string]Asset `json:"objects"`
 }
 
 func receiveJSONObject(address string, a any) error {

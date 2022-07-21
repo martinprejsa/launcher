@@ -162,8 +162,8 @@ func minecraftAuth(xstx string, uhs string) string {
 
 	jsonResponse, _ := ioutil.ReadAll(response.Body)
 	var data map[string]interface{}
-	json.Unmarshal(jsonResponse, &data)
 
+	json.Unmarshal(jsonResponse, &data)
 	return data["access_token"].(string)
 }
 

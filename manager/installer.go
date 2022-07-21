@@ -14,28 +14,30 @@ import (
 const fabricUrl = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.11.0/fabric-installer-0.11.0.jar"
 
 func InstallTheOnlyProfile(dir string) error {
-	/*installer, err := downloadFabric()
+	installer, err := downloadFabric()
 	if err != nil {
 		return errors.WithMessage(err, "failed to download fabric installer")
 	}
 
 	err = installFabric(installer, dir, "1.19") // TODO: fetch version
 	if err != nil {
-		return errors.WithMessage(err, "failed to install fabric")
-	} */
+		//return errors.WithMessage(err, "failed to install fabric")
+	}
+
+	fmt.Println("next")
 
 	mf, _ := GetManifest()
 	ver, _ := mf.GetLatestVersion()
-	ver.CreateCommandLine()
+	//ver.CreateCommandLine(LaunchPlaceholders{})
 
-	/* _, err = downloadAssets(ver, dir)
+	_, err = downloadAssets(ver, dir)
 	if err != nil {
 		return errors.WithMessage(err, "failed to download assets")
 	}
 	_, err = downloadLibraries(ver, dir)
 	if err != nil {
 		return errors.WithMessage(err, "failed to download libraries")
-	} */
+	}
 
 	return nil
 }
@@ -70,7 +72,7 @@ func installFabric(installer string, dir string, version string) error {
 	}
 
 	//TODO included java bin
-	cmd := exec.Command("java", "-jar", installer, "client", "-dir", "/home/martin/.genecraft/launcher", "-mcversion", version)
+	cmd := exec.Command("java", "-jar", installer, "client", "-dir", "/home/martin/.genecraft/launcher")
 	fmt.Println(cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -99,8 +101,11 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 	var counter = 1
 	for name, asset := range asts {
 		var download = func() {
-			res, _ := downloadAsset(asset, d, name)
-			fmt.Printf("[%d/%d] ASSET: %s %s \n", counter, len(asts), codeToString(res), name) //TODO debug print, goroutines
+			res, err := downloadAsset(asset, d)
+			fmt.Printf("[%d/%d] ASSET: %s %s\n", counter, len(asts), codeToString(res), name) //TODO debug print, goroutines
+			if res == Failed {
+				fmt.Printf("\tcaused by: %s\n", err)
+			}
 			paths = append(paths, filepath.Join(d, name))
 			counter++
 		}
@@ -149,9 +154,9 @@ func codeToString(code resourceStatus) string {
 	}
 }
 
-func downloadAsset(a Asset, dir string, name string) (resourceStatus, error) {
-	if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
-		if checkSHA1Hash(filepath.Join(dir, name), a.Hash) {
+func downloadAsset(a Asset, dir string) (resourceStatus, error) {
+	if _, err := os.Stat(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash)); err == nil {
+		if checkSHA1Hash(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash), a.Hash) {
 			return Skipped, nil // Already exists, skip
 		}
 	}
@@ -167,12 +172,12 @@ func downloadAsset(a Asset, dir string, name string) (resourceStatus, error) {
 		return Failed, err
 	}
 
-	err = os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(dir, "objects", a.Hash[0:2]), os.ModePerm)
 	if err != nil {
 		return Failed, err
 	}
 
-	h, err := os.Create(filepath.Join(dir, "assets", "objects", a.Hash[0:2], a.Hash))
+	h, err := os.Create(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash))
 	if err != nil {
 		return Failed, err
 	}

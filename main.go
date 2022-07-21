@@ -1,10 +1,6 @@
 package main
 
 import (
-	"launcher/manager"
-)
-
-/* import (
 	"embed"
 	"fmt"
 	"github.com/wailsapp/wails/v2"
@@ -36,9 +32,4 @@ func main() {
 	if err != nil {
 		log.Error(fmt.Sprintf("failed to initialize application: %s", err))
 	}
-} */
-
-func main() {
-	manager.CreateProfile("/home/martin/.genecraft/launcher/", "none")
-
 }
