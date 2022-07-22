@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"launcher/api/microsoft"
+	"launcher/manager"
 	"launcher/memory"
 )
 
 // Bridge struct
 type Bridge struct {
-	ctx context.Context
+	ctx     context.Context
+	Profile microsoft.MinecraftProfile
 }
 
 type ProfileInfo struct {
@@ -18,7 +21,7 @@ type ProfileInfo struct {
 }
 
 type HardwareInfo struct {
-	MemorySize int
+	MemorySize int `json:"memory_size"`
 }
 
 type ClientSettings struct {
@@ -69,6 +72,26 @@ func (a *Bridge) getHardwareInfo() HardwareInfo {
 	}
 }
 
-func (a *Bridge) LaunchGame(settings ClientSettings) {
-
+func (a *Bridge) LaunchGame(settings ClientSettings) error {
+	if a.Profile.AccessToken != "" {
+		games := manager.Explore()
+		if true {
+			err := manager.CreateProfile("latest")
+			if err != nil {
+				fmt.Printf("FAILED TO INSTALL NEW PROFILE: %s\n", err)
+				return nil
+			} else {
+				fmt.Println("installed")
+				games = manager.Explore()
+			}
+		}
+		games[0].Launch(manager.Auth{
+			Username:    a.Profile.Name,
+			AccessToken: a.Profile.AccessToken,
+			UUID:        a.Profile.ID,
+		})
+		return nil
+	} else {
+		return errors.New("not authorized")
+	}
 }

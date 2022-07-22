@@ -35,13 +35,17 @@ type Version struct {
 	AssetIndex struct {
 		ID        string `json:"id"`
 		SHA1      string `json:"sha1"`
-		Size      int    `json:"size"`
+		Size      int64  `json:"size"`
 		TotalSize int    `json:"totalSize"`
 		Url       string `json:"url"`
 	} `json:"assetIndex"`
-	Assets          string `json:"assets"`
-	ComplianceLevel int    `json:"compliance_level"`
-	Libraries       []Library
+	Downloads map[string]struct {
+		SHA1 string `json:"sha1"`
+		Size int64  `json:"size"`
+		Url  string `json:"url"`
+	} `json:"downloads"`
+	Assets    string `json:"assets"`
+	Libraries []Library
 }
 type Library struct {
 	Downloads struct {
@@ -69,20 +73,20 @@ type Asset struct {
 }
 
 type LaunchPlaceholders struct {
-	NativesDirectory string `json:"natives_directory"`
-	LauncherName     string `json:"launcher_name"`
-	LauncherVersion  string `json:"launcher_version"`
-	Username         string `json:"auth_player_name"`
-	Version          string `json:"version_name"`
-	GameDir          string `json:"game_directory"`
-	AssetDir         string `json:"assets_root"`
-	AssetIndex       string `json:"assets_index_name"`
-	UUID             string `json:"auth_uuid"`
-	AccessToken      string `json:"auth_access_token"`
-	ClientID         string `json:"clientid"`
-	XUID             string `json:"auth_xuid"`
-	UserType         string `json:"user_type"`
-	VersionType      string `json:"version_type"`
+	NativesDirectory string `placeholder:"natives_directory"`
+	LauncherName     string `placeholder:"launcher_name"`
+	LauncherVersion  string `placeholder:"launcher_version"`
+	Username         string `placeholder:"auth_player_name"`
+	Version          string `placeholder:"version_name"`
+	GameDir          string `placeholder:"game_directory"`
+	AssetDir         string `placeholder:"assets_root"`
+	AssetIndex       string `placeholder:"assets_index_name"`
+	UUID             string `placeholder:"auth_uuid"`
+	AccessToken      string `placeholder:"auth_access_token"`
+	ClientID         string `placeholder:"clientid"`
+	XUID             string `placeholder:"auth_xuid"`
+	UserType         string `placeholder:"user_type"`
+	VersionType      string `placeholder:"version_type"`
 }
 
 func GetManifest() (Manifest, error) {
@@ -134,7 +138,7 @@ func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlacehold
 		r := reflect.ValueOf(placeholders)
 		t := reflect.TypeOf(placeholders)
 		for i := 0; i < r.NumField(); i++ {
-			s = rpl(s, t.Field(i).Tag.Get("json"), r.Field(i).Interface().(string))
+			s = rpl(s, t.Field(i).Tag.Get("placeholder"), r.Field(i).Interface().(string))
 		}
 		return rpl(s, "classpath", strings.Join(append(append(v.GetLibraryPaths(filepath.Join(placeholders.GameDir, "libraries")), extraLibs...), gameJar), ":"))
 	}

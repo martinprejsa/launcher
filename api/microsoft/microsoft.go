@@ -15,10 +15,11 @@ type MinecraftAuthHandle struct {
 }
 
 type MinecraftProfile struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Skins []MinecraftSkin
-	Capes []MinecraftCape
+	AccessToken string
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Skins       []MinecraftSkin
+	Capes       []MinecraftCape
 }
 
 type MinecraftSkin struct {
@@ -65,7 +66,8 @@ func (h *MinecraftAuthHandle) GetMinecraftProfile() (MinecraftProfile, error) {
 		return MinecraftProfile{}, errors.New("couldn't retrieve the minecraft profile") // user doesnt own the game-legacy
 	}
 
-	return MinecraftProfile{}, nil
+	profile.AccessToken = h.accessToken
+	return profile, nil
 }
 
 func MinecraftAuth() (MinecraftAuthHandle, error) {

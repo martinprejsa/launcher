@@ -46,12 +46,33 @@ func Explore() []Profile {
 	return profiles
 }
 
-func CreateProfile(dir string, kind string) {
+func (p *Profile) Verify() error {
+	h, err := os.Open(p.JAR)
+	if err != nil {
+		return err
+	}
+	s, err := h.Stat()
+	if err != nil {
+		return err
+	}
+
+	if s.Size() == 0 {
+		err := installMinecraft(p.JAR, p.Version)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func CreateProfile(kind string) error {
+	fmt.Println("creating profile") //REMOVEME
 	if kind == "fabric-latest" {
 		//TODO this kind shit
 	}
 
-	InstallTheOnlyProfile(dir)
+	return InstallTheOnlyProfile(GetLauncherRoot())
 }
 
 func (p *Profile) Launch(auth Auth) {
@@ -68,6 +89,8 @@ func (p *Profile) Launch(auth Auth) {
 		return data
 	}
 
+	p.Verify()
+
 	toPath := func(s string) string {
 		seg := strings.Split(s, ":")
 		pkg := strings.Split(seg[0], ".")
@@ -81,15 +104,17 @@ func (p *Profile) Launch(auth Auth) {
 		extra = append(extra, toPath(l.(map[string]interface{})["name"].(string)))
 	}
 
+	version := "1.19"
+
 	jvm, game := p.Version.CreateCommandLine(p.JAR, LaunchPlaceholders{
 		".",
 		"\"Genecraft launcher\"",
 		"\"1.0\"",
 		auth.Username,
-		"1.19",
+		version,
 		GetLauncherRoot(),
 		filepath.Join(GetLauncherRoot(), "assets"),
-		"1.19",
+		version,
 		auth.UUID,
 		auth.AccessToken,
 		"",
@@ -97,7 +122,7 @@ func (p *Profile) Launch(auth Auth) {
 		"msa",
 		"release"}, extra)
 
-	args := append(jvm, "net.fabricmc.loader.impl.launch.knot.KnotClient")
+	args := append(jvm, fabricmf["mainClass"].(string))
 	args = append(args, game...)
 	cmd := exec.Command("java", args...)
 	fmt.Println(cmd.String())

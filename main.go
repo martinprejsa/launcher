@@ -1,6 +1,8 @@
 package main
 
-import (
+import "launcher/api/microsoft"
+
+/*import (
 	"embed"
 	"fmt"
 	"github.com/wailsapp/wails/v2"
@@ -32,4 +34,12 @@ func main() {
 	if err != nil {
 		log.Error(fmt.Sprintf("failed to initialize application: %s", err))
 	}
+}*/
+
+func main() {
+	bridge := InitBridge()
+	rsp, _ := microsoft.MinecraftAuth()
+	profile, _ := rsp.GetMinecraftProfile()
+	bridge.Profile = profile
+	bridge.LaunchGame(ClientSettings{})
 }

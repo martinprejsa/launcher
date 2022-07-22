@@ -20,15 +20,14 @@ func InstallTheOnlyProfile(dir string) error {
 	}
 
 	err = installFabric(installer, dir, "1.19") // TODO: fetch version
-	if err != nil {
-		//return errors.WithMessage(err, "failed to install fabric")
-	}
+	//TODO download and install fabric manually
 
-	fmt.Println("next")
+	if err != nil {
+		return errors.WithMessage(err, "failed to install fabric")
+	}
 
 	mf, _ := GetManifest()
 	ver, _ := mf.GetLatestVersion()
-	//ver.CreateCommandLine(LaunchPlaceholders{})
 
 	_, err = downloadAssets(ver, dir)
 	if err != nil {
@@ -43,6 +42,26 @@ func InstallTheOnlyProfile(dir string) error {
 }
 
 // PRIVATE REGION //
+
+func installMinecraft(file string, version Version) error {
+	r, err := http.Get(version.Downloads["client"].Url)
+	if err != nil {
+		return err
+	}
+	b, err := io.ReadAll(r.Body)
+
+	h, err := os.OpenFile(file, os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer h.Close()
+	_, err = h.Write(b)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func downloadFabric() (string, error) {
 	r, err := http.Get(fabricUrl)
@@ -72,18 +91,14 @@ func installFabric(installer string, dir string, version string) error {
 	}
 
 	//TODO included java bin
-	cmd := exec.Command("java", "-jar", installer, "client", "-dir", "/home/martin/.genecraft/launcher")
+	cmd := exec.Command("java", "-jar", installer, "client", "-dir", dir, "-mcversion", version)
 	fmt.Println(cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err) //TODO
 	}
-	fmt.Printf("Output:\n%s\n", string(output))
+	fmt.Printf("Output:\n%s\n", string(output)) //REMOVEME
 	//err = cmd.Run()
-
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
