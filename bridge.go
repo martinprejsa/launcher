@@ -43,12 +43,14 @@ func (a *Bridge) startup(ctx context.Context) {
 	// Perform your setup here
 	a.ctx = ctx
 	a.GameInfo.IsInstalled = len(manager.Explore()) > 0
-	progressHandler := progressUpdatedNotifier{}
+	progressHandler := progressUpdatedNotifier{
+		a,
+	}
 	events.ProgressUpdateEvent.Register(progressHandler)
 }
 
 type progressUpdatedNotifier struct {
-	b Bridge
+	b *Bridge
 }
 
 func (p progressUpdatedNotifier) Handle(payload events.ProgressUpdateEventPayload) {
