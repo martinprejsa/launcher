@@ -11,8 +11,9 @@ import (
 
 // Bridge struct
 type Bridge struct {
-	ctx     context.Context
-	Profile microsoft.MinecraftProfile
+	ctx      context.Context
+	Profile  microsoft.MinecraftProfile
+	GameInfo GameInfo
 }
 
 type ProfileInfo struct {
@@ -24,11 +25,15 @@ type HardwareInfo struct {
 	MemorySize int `json:"memory_size"`
 }
 
+type GameInfo struct {
+	IsInstalled bool `json:"isInstalled"`
+}
+
 type ClientSettings struct {
-	KeepOpen         bool
-	Memory           int
-	ResolutionWidth  int
-	ResolutionHeight int
+	KeepOpen         bool `json:"keep_open"`
+	Memory           int  `json:"memory"`
+	ResolutionWidth  int  `json:"resolution_width"`
+	ResolutionHeight int  `json:"resolution_height"`
 }
 
 // startup is called at application startup
@@ -38,8 +43,10 @@ func (a *Bridge) startup(ctx context.Context) {
 }
 
 // InitBridge creates a new Bridge application struct
-func InitBridge() *Bridge {
-	return &Bridge{}
+func InitBridge(gameInstalled bool) *Bridge {
+	return &Bridge{
+		GameInfo: GameInfo{IsInstalled: true},
+	}
 }
 
 // GetWalletData returns wallet data
@@ -60,20 +67,28 @@ func (a *Bridge) Authenticate() (ProfileInfo, error) {
 		return ProfileInfo{}, errors.New("failed to authenticate")
 	}
 	profile, err := rsp.GetMinecraftProfile()
+	a.Profile = profile
+
 	if err != nil {
 		return ProfileInfo{}, errors.New("failed to obtain minecraft profile")
 	}
 	return ProfileInfo{profile.Name, ""}, nil
 }
 
-func (a *Bridge) getHardwareInfo() HardwareInfo {
+func (a *Bridge) GetGameInfo() GameInfo {
+	return a.GameInfo
+}
+
+func (a *Bridge) GetHardwareInfo() HardwareInfo {
 	return HardwareInfo{
 		memory.GetMemoryTotal(),
 	}
 }
 
-func (a *Bridge) LaunchGame(settings ClientSettings) error {
+func (a *Bridge) LaunchGame() error {
+	fmt.Println("launching")
 	if a.Profile.AccessToken != "" {
+		fmt.Println("launching1")
 		games := manager.Explore()
 		if true {
 			err := manager.CreateProfile("latest")
@@ -85,6 +100,7 @@ func (a *Bridge) LaunchGame(settings ClientSettings) error {
 				games = manager.Explore()
 			}
 		}
+		fmt.Println("launching2")
 		games[0].Launch(manager.Auth{
 			Username:    a.Profile.Name,
 			AccessToken: a.Profile.AccessToken,
