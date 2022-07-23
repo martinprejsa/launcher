@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"io"
+	"launcher/events"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,14 +15,16 @@ import (
 const fabricUrl = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.11.0/fabric-installer-0.11.0.jar"
 
 func InstallTheOnlyProfile(dir string) error {
-
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0})
 	installer, err := downloadFabric()
 	if err != nil {
 		return errors.WithMessage(err, "failed to download fabric installer")
 	}
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 5})
 
 	err = installFabric(installer, dir, "1.19") // TODO: fetch version
 	//TODO download and install fabric manually
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10})
 
 	if err != nil {
 		return errors.WithMessage(err, "failed to install fabric")
@@ -38,7 +41,8 @@ func InstallTheOnlyProfile(dir string) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to download libraries")
 	}
-
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 100})
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: -1})
 	return nil
 }
 
@@ -113,7 +117,8 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
-
+	piece := float64(45) / float64(len(asts))
+	var progress = 10.0
 	var counter = 1
 	for name, asset := range asts {
 		var download = func() {
@@ -123,6 +128,10 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 				fmt.Printf("\tcaused by: %s\n", err)
 			}
 			paths = append(paths, filepath.Join(d, name))
+
+			progress += piece
+			events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress})
+
 			counter++
 		}
 
@@ -133,6 +142,8 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 
 func downloadLibraries(ver Version, dir string) ([]string, error) {
 	var paths []string
+	piece := float64(45) / float64(len(ver.Libraries))
+	progress := 55.0
 	for i, library := range ver.Libraries {
 		res, err := downloadLibrary(library, dir)
 		if err != nil {
@@ -140,6 +151,8 @@ func downloadLibraries(ver Version, dir string) ([]string, error) {
 			return []string{}, err
 		}
 		fmt.Printf("[%d/%d] LIBRARY: %s %s \n", i+1, len(ver.Libraries), codeToString(res), library.Name) //TODO debug print
+		progress += piece
+		events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress})
 		paths = append(paths, filepath.Join(dir, library.Downloads.Artifact.Path))
 	}
 	return paths, nil

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"launcher/api/microsoft"
+	"launcher/events"
 	"launcher/manager"
 	"launcher/memory"
 )
@@ -14,6 +15,7 @@ type Bridge struct {
 	ctx      context.Context
 	Profile  microsoft.MinecraftProfile
 	GameInfo GameInfo
+	Progress float64
 }
 
 type ProfileInfo struct {
@@ -40,13 +42,30 @@ type ClientSettings struct {
 func (a *Bridge) startup(ctx context.Context) {
 	// Perform your setup here
 	a.ctx = ctx
+	a.GameInfo.IsInstalled = len(manager.Explore()) > 0
+	progressHandler := progressUpdatedNotifier{}
+	events.ProgressUpdateEvent.Register(progressHandler)
+}
+
+type progressUpdatedNotifier struct {
+	b Bridge
+}
+
+func (p progressUpdatedNotifier) Handle(payload events.ProgressUpdateEventPayload) {
+	p.b.Progress = payload.Progress
+}
+
+func (a *Bridge) IsAuthenticated() bool {
+	return false
+}
+
+func (a *Bridge) GetProgress() float64 {
+	return a.Progress
 }
 
 // InitBridge creates a new Bridge application struct
-func InitBridge(gameInstalled bool) *Bridge {
-	return &Bridge{
-		GameInfo: GameInfo{IsInstalled: true},
-	}
+func InitBridge() *Bridge {
+	return &Bridge{}
 }
 
 // GetWalletData returns wallet data
@@ -86,9 +105,7 @@ func (a *Bridge) GetHardwareInfo() HardwareInfo {
 }
 
 func (a *Bridge) LaunchGame() error {
-	fmt.Println("launching")
 	if a.Profile.AccessToken != "" {
-		fmt.Println("launching1")
 		games := manager.Explore()
 		if true {
 			err := manager.CreateProfile("latest")
@@ -96,16 +113,16 @@ func (a *Bridge) LaunchGame() error {
 				fmt.Printf("FAILED TO INSTALL NEW PROFILE: %s\n", err)
 				return nil
 			} else {
-				fmt.Println("installed")
 				games = manager.Explore()
 			}
 		}
-		fmt.Println("launching2")
+
 		games[0].Launch(manager.Auth{
 			Username:    a.Profile.Name,
 			AccessToken: a.Profile.AccessToken,
 			UUID:        a.Profile.ID,
 		})
+
 		return nil
 	} else {
 		return errors.New("not authorized")
