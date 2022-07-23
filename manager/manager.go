@@ -2,7 +2,6 @@ package manager
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -67,7 +66,6 @@ func (p *Profile) Verify() error {
 }
 
 func CreateProfile(kind string) error {
-	fmt.Println("creating profile") //REMOVEME
 	if kind == "fabric-latest" {
 		//TODO this kind shit
 	}
@@ -125,6 +123,6 @@ func (p *Profile) Launch(auth Auth) {
 	args := append(jvm, fabricmf["mainClass"].(string))
 	args = append(args, game...)
 	cmd := exec.Command("java", args...)
-	fmt.Println(cmd.String())
+	//TODO: log command
 	cmd.Run()
 }

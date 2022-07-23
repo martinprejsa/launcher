@@ -14,8 +14,14 @@ import (
 
 const fabricUrl = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.11.0/fabric-installer-0.11.0.jar"
 
+type installHandle struct {
+	pbar ProgressBar
+}
+
 func InstallTheOnlyProfile(dir string) error {
+
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0})
+
 	installer, err := downloadFabric()
 	if err != nil {
 		return errors.WithMessage(err, "failed to download fabric installer")
@@ -97,7 +103,6 @@ func installFabric(installer string, dir string, version string) error {
 
 	//TODO included java bin
 	cmd := exec.Command("java", "-jar", installer, "client", "-dir", dir, "-mcversion", version)
-	fmt.Println(cmd.String())
 
 	_ = cmd.Run() //FIXME: ignored, but check java first
 
@@ -117,15 +122,17 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
+
 	piece := float64(45) / float64(len(asts))
 	var progress = 10.0
+
 	var counter = 1
 	for name, asset := range asts {
 		var download = func() {
 			res, err := downloadAsset(asset, d)
-			fmt.Printf("[%d/%d] ASSET: %s %s\n", counter, len(asts), codeToString(res), name) //TODO debug print, goroutines
+			fmt.Printf("[%d/%d] ASSET: %s %s\n", counter, len(asts), codeToString(res), name) //TODO: log
 			if res == Failed {
-				fmt.Printf("\tcaused by: %s\n", err)
+				fmt.Printf("\tcaused by: %s\n", err) //TODO: log
 			}
 			paths = append(paths, filepath.Join(d, name))
 
@@ -142,16 +149,22 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 
 func downloadLibraries(ver Version, dir string) ([]string, error) {
 	var paths []string
+
 	piece := float64(45) / float64(len(ver.Libraries))
 	progress := 55.0
+
 	for i, library := range ver.Libraries {
 		res, err := downloadLibrary(library, dir)
 		if err != nil {
-			fmt.Println(err)
+			//TODO: log
 			return []string{}, err
 		}
-		fmt.Printf("[%d/%d] LIBRARY: %s %s \n", i+1, len(ver.Libraries), codeToString(res), library.Name) //TODO debug print
+		fmt.Printf("[%d/%d] LIBRARY: %s %s \n", i+1, len(ver.Libraries), codeToString(res), library.Name) //TODO: log
+		if res == Failed {
+			fmt.Printf("\tcaused by: %s\n", err) //TODO: log
+		}
 		progress += piece
+
 		events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress})
 		paths = append(paths, filepath.Join(dir, library.Downloads.Artifact.Path))
 	}
