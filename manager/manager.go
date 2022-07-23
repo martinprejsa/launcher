@@ -45,7 +45,7 @@ func Explore() []Profile {
 	return profiles
 }
 
-func (p *Profile) Verify() error {
+func (p *Profile) InstallMinecraft() error {
 	h, err := os.Open(p.JAR)
 	if err != nil {
 		return err
@@ -86,8 +86,6 @@ func (p *Profile) Launch(auth Auth) {
 		_ = json.Unmarshal(b, &data)
 		return data
 	}
-
-	p.Verify()
 
 	toPath := func(s string) string {
 		seg := strings.Split(s, ":")

@@ -3,11 +3,12 @@ package bridge
 import (
 	"context"
 	"errors"
-	"fmt"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"launcher/api/microsoft"
 	"launcher/events"
 	"launcher/manager"
 	"launcher/memory"
+	"os"
 )
 
 type Bridge struct {
@@ -92,25 +93,25 @@ func (a *Bridge) GetHardwareInfo() HardwareInfo {
 	}
 }
 
+// InstallGame installs the game, can be used for reinstall
+func (a *Bridge) InstallGame() error {
+	err := manager.CreateProfile("latest")
+	games := manager.Explore()
+	games[0].InstallMinecraft()
+	return err
+}
+
 // LaunchGame launches the game, use GetProgress to monitor
 func (a *Bridge) LaunchGame() error {
 	if a.Profile.AccessToken != "" {
+		runtime.WindowHide(a.ctx)
 		games := manager.Explore()
-		if true {
-			err := manager.CreateProfile("latest")
-			if err != nil {
-				fmt.Printf("FAILED TO INSTALL NEW PROFILE: %s\n", err)
-				return nil
-			} else {
-				games = manager.Explore()
-			}
-		}
-
 		games[0].Launch(manager.Auth{
 			Username:    a.Profile.Name,
 			AccessToken: a.Profile.AccessToken,
 			UUID:        a.Profile.ID,
 		})
+		os.Exit(0)
 
 		return nil
 	} else {
