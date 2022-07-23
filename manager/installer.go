@@ -14,6 +14,7 @@ import (
 const fabricUrl = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.11.0/fabric-installer-0.11.0.jar"
 
 func InstallTheOnlyProfile(dir string) error {
+
 	installer, err := downloadFabric()
 	if err != nil {
 		return errors.WithMessage(err, "failed to download fabric installer")
@@ -93,12 +94,8 @@ func installFabric(installer string, dir string, version string) error {
 	//TODO included java bin
 	cmd := exec.Command("java", "-jar", installer, "client", "-dir", dir, "-mcversion", version)
 	fmt.Println(cmd.String())
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println(err) //TODO
-	}
-	fmt.Printf("Output:\n%s\n", string(output)) //REMOVEME
-	//err = cmd.Run()
+
+	_ = cmd.Run() //FIXME: ignored, but check java first
 
 	return nil
 }
@@ -112,7 +109,11 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 		}
 	}
 	var paths []string
-	asts, _ := ver.GetAssets() //todo handle error
+	asts, err := ver.GetAssets()
+	if err != nil {
+		return []string{}, err
+	}
+
 	var counter = 1
 	for name, asset := range asts {
 		var download = func() {
@@ -197,7 +198,6 @@ func downloadAsset(a Asset, dir string) (resourceStatus, error) {
 		return Failed, err
 	}
 	defer h.Close()
-	//TODO check size
 	_, err = h.Write(b)
 	if err != nil {
 		return Failed, err
