@@ -8,5 +8,5 @@ import (
 )
 
 func GetLauncherRoot() string {
-	return filepath.Join(os.Getenv("APPDATA"), ".genecraft", "launcher")
+	return filepath.Join(os.Getenv("APPDATA"), ".genecraft")
 }
