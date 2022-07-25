@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"io"
+	"launcher/manager/comp"
 	"net/http"
 	"path/filepath"
 	"reflect"
@@ -144,10 +145,10 @@ func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlacehold
 		for i := 0; i < r.NumField(); i++ {
 			s = rpl(s, t.Field(i).Tag.Get("placeholder"), r.Field(i).Interface().(string))
 		}
-		cp := v.GetLibraryPaths(GetLibraryPath())
+		cp := v.GetLibraryPaths(comp.GetLibraryPath())
 		cp = append(cp, extraLibs...)
 		cp = append(cp, gameJar)
-		return rpl(s, "classpath", strings.Join(cp, ":"))
+		return rpl(s, "classpath", strings.Join(cp, string(comp.GetSeparator())))
 	}
 
 	for _, a := range v.Arguments.JVM {

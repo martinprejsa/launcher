@@ -1,6 +1,6 @@
 //go:build linux
 
-package manager
+package comp
 
 import (
 	"os"

@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"launcher/events"
+	"launcher/manager/comp"
 	"net/http"
 	"os"
 	"os/exec"
@@ -107,8 +108,8 @@ func installFabric(installer string, dir string, version string) error {
 }
 
 func downloadAssets(ver Version) ([]string, error) {
-	if _, err := os.Stat(GetAssetsPath()); err != nil {
-		err := os.MkdirAll(GetAssetsPath(), os.ModePerm)
+	if _, err := os.Stat(comp.GetAssetsPath()); err != nil {
+		err := os.MkdirAll(comp.GetAssetsPath(), os.ModePerm)
 		if err != nil {
 			return []string{}, err
 		}
@@ -130,7 +131,7 @@ func downloadAssets(ver Version) ([]string, error) {
 			if res == Failed {
 				fmt.Printf("\tcaused by: %s\n", err) //TODO: log
 			}
-			paths = append(paths, filepath.Join(GetAssetsPath(), name))
+			paths = append(paths, filepath.Join(comp.GetAssetsPath(), name))
 
 			progress += piece
 			events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress})
@@ -162,7 +163,7 @@ func downloadLibraries(ver Version) ([]string, error) {
 		progress += piece
 
 		events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress})
-		paths = append(paths, filepath.Join(GetLibraryPath(), library.Downloads.Artifact.Path))
+		paths = append(paths, filepath.Join(comp.GetLibraryPath(), library.Downloads.Artifact.Path))
 	}
 	return paths, nil
 }
@@ -193,7 +194,7 @@ func codeToString(code resourceStatus) string {
 }
 
 func downloadAsset(a Asset) (resourceStatus, error) {
-	dir := GetAssetsPath()
+	dir := comp.GetAssetsPath()
 	if _, err := os.Stat(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash)); err == nil {
 		if checkSHA1Hash(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash), a.Hash) {
 			return Skipped, nil // Already exists, skip
@@ -230,7 +231,7 @@ func downloadAsset(a Asset) (resourceStatus, error) {
 }
 
 func downloadLibrary(lib Library) (resourceStatus, error) {
-	dir := GetLibraryPath()
+	dir := comp.GetLibraryPath()
 	var skip = false
 	for _, rule := range lib.Rules {
 		if !rule.Complies() {
