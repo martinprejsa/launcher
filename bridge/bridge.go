@@ -2,7 +2,6 @@ package bridge
 
 import (
 	"context"
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"launcher/api/microsoft"
@@ -47,7 +46,7 @@ type ClientSettings struct {
 
 // IsAuthenticated returns the authentication status
 func (a *Bridge) IsAuthenticated() bool {
-	return false
+	return a.Profile.AccessToken != ""
 }
 
 // GetProgress returns the progress, -1 when none
@@ -110,7 +109,6 @@ func (a *Bridge) InstallGame() error {
 
 // LaunchGame launches the game, use GetProgress to monitor
 func (a *Bridge) LaunchGame() error {
-	fmt.Println("launching")
 	if a.Profile.AccessToken != "" {
 		runtime.WindowHide(a.ctx)
 		games := manager.Explore()
