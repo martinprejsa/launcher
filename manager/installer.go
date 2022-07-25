@@ -37,11 +37,11 @@ func InstallTheOnlyProfile(dir string) error {
 	mf, _ := GetManifest()
 	ver, _ := mf.GetLatestVersion()
 
-	_, err = downloadAssets(ver, dir)
+	_, err = downloadAssets(ver)
 	if err != nil {
 		return errors.WithMessage(err, "failed to download assets")
 	}
-	_, err = downloadLibraries(ver, dir)
+	_, err = downloadLibraries(ver)
 	if err != nil {
 		return errors.WithMessage(err, "failed to download libraries")
 	}
@@ -106,10 +106,9 @@ func installFabric(installer string, dir string, version string) error {
 	return nil
 }
 
-func downloadAssets(ver Version, dir string) ([]string, error) {
-	d := filepath.Join(dir, "assets")
-	if _, err := os.Stat(d); err != nil {
-		err := os.MkdirAll(d, os.ModePerm)
+func downloadAssets(ver Version) ([]string, error) {
+	if _, err := os.Stat(GetAssetsPath()); err != nil {
+		err := os.MkdirAll(GetAssetsPath(), os.ModePerm)
 		if err != nil {
 			return []string{}, err
 		}
@@ -126,12 +125,12 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 	var counter = 1
 	for name, asset := range asts {
 		var download = func() {
-			res, err := downloadAsset(asset, d)
+			res, err := downloadAsset(asset)
 			fmt.Printf("[%d/%d] ASSET: %s %s\n", counter, len(asts), codeToString(res), name) //TODO: log
 			if res == Failed {
 				fmt.Printf("\tcaused by: %s\n", err) //TODO: log
 			}
-			paths = append(paths, filepath.Join(d, name))
+			paths = append(paths, filepath.Join(GetAssetsPath(), name))
 
 			progress += piece
 			events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress})
@@ -144,14 +143,14 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 	return paths, nil
 }
 
-func downloadLibraries(ver Version, dir string) ([]string, error) {
+func downloadLibraries(ver Version) ([]string, error) {
 	var paths []string
 
 	piece := float64(40) / float64(len(ver.Libraries))
 	progress := 55.0
 
 	for i, library := range ver.Libraries {
-		res, err := downloadLibrary(library, dir)
+		res, err := downloadLibrary(library)
 		if err != nil {
 			//TODO: log
 			return []string{}, err
@@ -163,7 +162,7 @@ func downloadLibraries(ver Version, dir string) ([]string, error) {
 		progress += piece
 
 		events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress})
-		paths = append(paths, filepath.Join(dir, library.Downloads.Artifact.Path))
+		paths = append(paths, filepath.Join(GetLibraryPath(), library.Downloads.Artifact.Path))
 	}
 	return paths, nil
 }
@@ -193,7 +192,8 @@ func codeToString(code resourceStatus) string {
 	}
 }
 
-func downloadAsset(a Asset, dir string) (resourceStatus, error) {
+func downloadAsset(a Asset) (resourceStatus, error) {
+	dir := GetAssetsPath()
 	if _, err := os.Stat(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash)); err == nil {
 		if checkSHA1Hash(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash), a.Hash) {
 			return Skipped, nil // Already exists, skip
@@ -229,8 +229,8 @@ func downloadAsset(a Asset, dir string) (resourceStatus, error) {
 	return Downloaded, nil
 }
 
-func downloadLibrary(lib Library, dir string) (resourceStatus, error) {
-	dir = filepath.Join(dir, "libraries")
+func downloadLibrary(lib Library) (resourceStatus, error) {
+	dir := GetLibraryPath()
 	var skip = false
 	for _, rule := range lib.Rules {
 		if !rule.Complies() {

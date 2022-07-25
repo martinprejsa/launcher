@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"launcher/api/microsoft"
@@ -109,6 +110,7 @@ func (a *Bridge) InstallGame() error {
 
 // LaunchGame launches the game, use GetProgress to monitor
 func (a *Bridge) LaunchGame() error {
+	fmt.Println("launching")
 	if a.Profile.AccessToken != "" {
 		runtime.WindowHide(a.ctx)
 		games := manager.Explore()
