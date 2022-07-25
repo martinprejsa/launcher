@@ -144,7 +144,10 @@ func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlacehold
 		for i := 0; i < r.NumField(); i++ {
 			s = rpl(s, t.Field(i).Tag.Get("placeholder"), r.Field(i).Interface().(string))
 		}
-		return rpl(s, "classpath", strings.Join(append(append(v.GetLibraryPaths(GetLibraryPath()), extraLibs...), gameJar), ":"))
+		cp := v.GetLibraryPaths(GetLibraryPath())
+		cp = append(cp, extraLibs...)
+		cp = append(cp, gameJar)
+		return rpl(s, "classpath", strings.Join(cp, ":"))
 	}
 
 	for _, a := range v.Arguments.JVM {
@@ -169,7 +172,7 @@ func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlacehold
 		}
 	}
 
-	jvm = append(jvm, "-DFabricMcEmu= net.minecraft.client.main.Main") //TODO: dynamic ADD FABRIC JVM OPT
+	jvm = append(jvm, "-DFabricMcEmu=net.minecraft.client.main.Main") //TODO: dynamic ADD FABRIC JVM OPT
 	//TODO logging
 
 	for _, a := range v.Arguments.Game {

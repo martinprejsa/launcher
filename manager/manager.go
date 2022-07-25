@@ -2,6 +2,7 @@ package manager
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -121,6 +122,9 @@ func (p *Profile) Launch(auth Auth) {
 	args := append(jvm, fabricmf["mainClass"].(string))
 	args = append(args, game...)
 	cmd := exec.Command("java", args...)
+	fmt.Println(cmd.String())
+	str, _ := cmd.CombinedOutput()
+	fmt.Println(string(str))
 	//TODO: log command
-	cmd.Run()
+	//cmd.Run()
 }
