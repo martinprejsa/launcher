@@ -93,11 +93,14 @@ func (a *Bridge) GetHardwareInfo() HardwareInfo {
 	}
 }
 
-// InstallGame installs the game, can be used for reinstall
+// InstallGame installs the game, can be used for reinstall, use GetProgress to monitor
 func (a *Bridge) InstallGame() error {
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0})
 	err := manager.CreateProfile("latest")
 	games := manager.Explore()
 	games[0].InstallMinecraft()
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 100})
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: -1})
 	return err
 }
 

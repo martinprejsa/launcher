@@ -20,8 +20,6 @@ type installHandle struct {
 
 func InstallTheOnlyProfile(dir string) error {
 
-	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0})
-
 	installer, err := downloadFabric()
 	if err != nil {
 		return errors.WithMessage(err, "failed to download fabric installer")
@@ -47,8 +45,7 @@ func InstallTheOnlyProfile(dir string) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to download libraries")
 	}
-	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 100})
-	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: -1})
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 90})
 	return nil
 }
 
@@ -123,7 +120,7 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 		return []string{}, err
 	}
 
-	piece := float64(45) / float64(len(asts))
+	piece := float64(40) / float64(len(asts))
 	var progress = 10.0
 
 	var counter = 1
@@ -150,7 +147,7 @@ func downloadAssets(ver Version, dir string) ([]string, error) {
 func downloadLibraries(ver Version, dir string) ([]string, error) {
 	var paths []string
 
-	piece := float64(45) / float64(len(ver.Libraries))
+	piece := float64(40) / float64(len(ver.Libraries))
 	progress := 55.0
 
 	for i, library := range ver.Libraries {
