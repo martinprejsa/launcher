@@ -2,7 +2,7 @@ package bridge
 
 import (
 	"context"
-	"errors"
+	"github.com/pkg/errors"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"launcher/api/microsoft"
 	"launcher/events"
@@ -98,7 +98,10 @@ func (a *Bridge) InstallGame() error {
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0})
 	err := manager.CreateProfile("latest")
 	games := manager.Explore()
-	games[0].InstallMinecraft()
+	err = games[0].InstallMinecraft()
+	if err != nil {
+		return errors.WithMessage(err, "failed to install native minecraft client")
+	}
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 100})
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: -1})
 	return err
