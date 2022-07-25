@@ -90,8 +90,8 @@ func (p *Profile) Launch(auth Auth) {
 	toPath := func(s string) string {
 		seg := strings.Split(s, ":")
 		pkg := strings.Split(seg[0], ".")
-		return filepath.Join(filepath.Join(GetLauncherRoot(), "libraries"), filepath.Join(pkg...), seg[len(seg)-2], seg[len(seg)-1], seg[len(seg)-2]+"-"+seg[len(seg)-1]+".jar")
-	}
+		return filepath.Join(GetLibraryPath(), filepath.Join(pkg...), seg[len(seg)-2], seg[len(seg)-1], seg[len(seg)-2]+"-"+seg[len(seg)-1]+".jar")
+	} //TODO maybe completely rework how libraries are saved, dont use folders
 
 	fabricmf := parseFabricManifest()
 	libs := fabricmf["libraries"].([]interface{})
@@ -104,12 +104,12 @@ func (p *Profile) Launch(auth Auth) {
 
 	jvm, game := p.Version.CreateCommandLine(p.JAR, LaunchPlaceholders{
 		".",
-		"\"Genecraft launcher\"",
-		"\"1.0\"",
+		"Genecraft launcher",
+		"1.0",
 		auth.Username,
 		version,
 		GetLauncherRoot(),
-		filepath.Join(GetLauncherRoot(), "assets"),
+		GetAssetsPath(),
 		version,
 		auth.UUID,
 		auth.AccessToken,

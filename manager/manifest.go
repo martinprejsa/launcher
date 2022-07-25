@@ -144,7 +144,7 @@ func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlacehold
 		for i := 0; i < r.NumField(); i++ {
 			s = rpl(s, t.Field(i).Tag.Get("placeholder"), r.Field(i).Interface().(string))
 		}
-		return rpl(s, "classpath", strings.Join(append(append(v.GetLibraryPaths(filepath.Join(placeholders.GameDir, "libraries")), extraLibs...), gameJar), ":"))
+		return rpl(s, "classpath", strings.Join(append(append(v.GetLibraryPaths(GetLibraryPath()), extraLibs...), gameJar), ":"))
 	}
 
 	for _, a := range v.Arguments.JVM {
