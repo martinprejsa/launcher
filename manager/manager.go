@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"launcher/manager/comp"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,7 +27,7 @@ type Auth struct {
 
 func Explore() []Profile {
 	var profiles []Profile
-	dir, _ := ioutil.ReadDir(filepath.Join(GetLauncherRoot(), "versions"))
+	dir, _ := ioutil.ReadDir(filepath.Join(comp.GetLauncherRoot(), "versions"))
 
 	for _, profile := range dir {
 		if profile.IsDir() {
@@ -35,8 +36,8 @@ func Explore() []Profile {
 			profiles = append(
 				profiles, Profile{
 					Name:     profile.Name(),
-					Config:   filepath.Join(GetLauncherRoot(), "versions", profile.Name(), profile.Name()+".json"),
-					JAR:      filepath.Join(GetLauncherRoot(), "versions", profile.Name(), profile.Name()+".jar"),
+					Config:   filepath.Join(comp.GetLauncherRoot(), "versions", profile.Name(), profile.Name()+".json"),
+					JAR:      filepath.Join(comp.GetLauncherRoot(), "versions", profile.Name(), profile.Name()+".jar"),
 					Manifest: mf,
 					Version:  ver,
 				})
@@ -71,7 +72,7 @@ func CreateProfile(kind string) error {
 		//TODO this kind shit
 	}
 
-	return InstallTheOnlyProfile(GetLauncherRoot())
+	return InstallTheOnlyProfile(comp.GetLauncherRoot())
 }
 
 func (p *Profile) Launch(auth Auth) {
@@ -91,7 +92,7 @@ func (p *Profile) Launch(auth Auth) {
 	toPath := func(s string) string {
 		seg := strings.Split(s, ":")
 		pkg := strings.Split(seg[0], ".")
-		return filepath.Join(GetLibraryPath(), filepath.Join(pkg...), seg[len(seg)-2], seg[len(seg)-1], seg[len(seg)-2]+"-"+seg[len(seg)-1]+".jar")
+		return filepath.Join(comp.GetLibraryPath(), filepath.Join(pkg...), seg[len(seg)-2], seg[len(seg)-1], seg[len(seg)-2]+"-"+seg[len(seg)-1]+".jar")
 	} //TODO maybe completely rework how libraries are saved, dont use folders
 
 	fabricmf := parseFabricManifest()
@@ -109,8 +110,8 @@ func (p *Profile) Launch(auth Auth) {
 		"1.0",
 		auth.Username,
 		version,
-		GetLauncherRoot(),
-		GetAssetsPath(),
+		comp.GetLauncherRoot(),
+		comp.GetAssetsPath(),
 		version,
 		auth.UUID,
 		auth.AccessToken,
