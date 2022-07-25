@@ -126,7 +126,7 @@ func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlacehold
 
 	replacePlaceholders := func(s string) string {
 		rpl := func(s string, key string, value string) string {
-			return strings.Replace(s, fmt.Sprintf("${%s}", key), value, -1)
+			return strings.Replace(s, fmt.Sprintf("\"${%s}\"", key), value, -1)
 		}
 		if strings.HasPrefix(s, "--xuid") {
 			return "" //FIXME
