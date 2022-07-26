@@ -7,6 +7,7 @@ import (
 	"launcher/api/microsoft"
 	"launcher/events"
 	"launcher/manager"
+	"launcher/manager/comp"
 	"launcher/memory"
 	"os"
 )
@@ -68,16 +69,16 @@ func (a *Bridge) GetWardrobeData() string {
 
 // Authenticate launches the authentication sequence
 func (a *Bridge) Authenticate() (ProfileInfo, error) {
-	rsp, err := microsoft.MinecraftAuth()
+	rsp, err := microsoft.MSAuth()
 	if err != nil {
 		return ProfileInfo{}, errors.New("failed to authenticate")
 	}
 	profile, err := rsp.GetMinecraftProfile()
-	a.Profile = profile
-
 	if err != nil {
 		return ProfileInfo{}, errors.New("failed to obtain minecraft profile")
 	}
+	a.Profile = profile
+
 	return ProfileInfo{profile.Name, ""}, nil
 }
 
@@ -131,6 +132,7 @@ func (a *Bridge) LaunchGame() error {
 
 func (a *Bridge) Startup(ctx context.Context) {
 	// Perform your setup here
+	os.Chdir(comp.GetLauncherRoot())
 	a.ctx = ctx
 	a.GameInfo.IsInstalled = len(manager.Explore()) > 0
 	progressHandler := progressUpdatedNotifier{

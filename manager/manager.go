@@ -2,7 +2,6 @@ package manager
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"launcher/manager/comp"
 	"os"
@@ -93,16 +92,16 @@ func (p *Profile) Launch(auth Auth) {
 		seg := strings.Split(s, ":")
 		pkg := strings.Split(seg[0], ".")
 		return filepath.Join(comp.GetLibraryPath(), filepath.Join(pkg...), seg[len(seg)-2], seg[len(seg)-1], seg[len(seg)-2]+"-"+seg[len(seg)-1]+".jar")
-	} //TODO maybe completely rework how libraries are saved, dont use folders
+	}
 
 	fabricmf := parseFabricManifest()
 	libs := fabricmf["libraries"].([]interface{})
-	var extra = []string{}
+	var extra []string
 	for _, l := range libs {
 		extra = append(extra, toPath(l.(map[string]interface{})["name"].(string)))
 	}
 
-	version := "1.19"
+	version := "1.19" //TODO this
 
 	jvm, game := p.Version.CreateCommandLine(p.JAR, LaunchPlaceholders{
 		".",
@@ -123,9 +122,6 @@ func (p *Profile) Launch(auth Auth) {
 	args := append(jvm, fabricmf["mainClass"].(string))
 	args = append(args, game...)
 	cmd := exec.Command("java", args...)
-	fmt.Println(cmd.String())
-	str, _ := cmd.CombinedOutput()
-	fmt.Println(string(str))
 	//TODO: log command
-	//cmd.Run()
+	cmd.Run()
 }
