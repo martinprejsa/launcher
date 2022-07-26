@@ -16,7 +16,7 @@ type Bridge struct {
 	ctx      context.Context
 	Profile  microsoft.MinecraftProfile
 	GameInfo GameInfo
-	Progress float64
+	Progress events.ProgressUpdateEventPayload
 }
 
 type ProfileInfo struct {
@@ -52,7 +52,12 @@ func (a *Bridge) IsAuthenticated() bool {
 
 // GetProgress returns the progress, -1 when none
 func (a *Bridge) GetProgress() float64 {
-	return a.Progress
+	return a.Progress.Progress
+}
+
+// GetProgressMessage returns the progress message, empty when none
+func (a *Bridge) GetProgressMessage() string {
+	return a.Progress.Message
 }
 
 // GetWalletData returns wallet data
@@ -96,14 +101,15 @@ func (a *Bridge) GetHardwareInfo() HardwareInfo {
 
 // InstallGame installs the game, can be used for reinstall, use GetProgress to monitor
 func (a *Bridge) InstallGame() error {
-	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0})
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0, Message: "Creating profile"})
 	err := manager.CreateProfile("latest")
 	games := manager.Explore()
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 90, Message: "Installing Minecraft"})
 	err = games[0].InstallMinecraft()
 	if err != nil {
 		return errors.WithMessage(err, "failed to install native minecraft client")
 	}
-	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 100})
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 100, Message: "Finishing up"})
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: -1})
 	return err
 }
@@ -146,5 +152,5 @@ type progressUpdatedNotifier struct {
 }
 
 func (p progressUpdatedNotifier) Handle(payload events.ProgressUpdateEventPayload) {
-	p.b.Progress = payload.Progress
+	p.b.Progress = payload
 }

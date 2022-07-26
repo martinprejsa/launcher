@@ -20,24 +20,22 @@ type installHandle struct {
 }
 
 func InstallTheOnlyProfile(dir string) error {
-
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 1, Message: "Downloading fabric"})
 	installer, err := downloadFabric()
 	if err != nil {
 		return errors.WithMessage(err, "failed to download fabric installer")
 	}
-	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 5})
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 5, Message: "Installing fabric"})
 
 	err = installFabric(installer, dir, "1.19") // TODO: fetch version
 	//TODO download and install fabric manually
-	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10})
 
 	if err != nil {
 		return errors.WithMessage(err, "failed to install fabric")
 	}
-
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10, Message: "Fetching manifest"})
 	mf, _ := GetManifest()
 	ver, _ := mf.GetLatestVersion()
-
 	_, err = downloadAssets(ver)
 	if err != nil {
 		return errors.WithMessage(err, "failed to download assets")
@@ -46,7 +44,6 @@ func InstallTheOnlyProfile(dir string) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to download libraries")
 	}
-	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 90})
 	return nil
 }
 
@@ -134,7 +131,7 @@ func downloadAssets(ver Version) ([]string, error) {
 			paths = append(paths, filepath.Join(comp.GetAssetsPath(), name))
 
 			progress += piece
-			events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress})
+			events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress, Message: fmt.Sprintf("Downloading assets %d/%d", counter, len(asts))})
 
 			counter++
 		}
@@ -162,7 +159,7 @@ func downloadLibraries(ver Version) ([]string, error) {
 		}
 		progress += piece
 
-		events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress})
+		events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress, Message: fmt.Sprintf("Downloading libraries %d/%d", i+1, len(ver.Libraries))})
 		paths = append(paths, filepath.Join(comp.GetLibraryPath(), library.Downloads.Artifact.Path))
 	}
 	return paths, nil

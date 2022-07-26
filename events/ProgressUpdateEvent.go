@@ -4,6 +4,7 @@ var ProgressUpdateEvent progressUpdateEvent
 
 type ProgressUpdateEventPayload struct {
 	Progress float64
+	Message  string
 }
 
 type progressUpdateEvent struct {
