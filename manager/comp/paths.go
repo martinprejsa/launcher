@@ -9,3 +9,7 @@ func GetLibraryPath() string {
 func GetAssetsPath() string {
 	return filepath.Join(GetLauncherRoot(), "assets")
 }
+
+func GetLogCfgsPath() string {
+	return filepath.Join(GetAssetsPath(), "log_cfgs")
+}

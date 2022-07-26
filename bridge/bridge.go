@@ -14,13 +14,15 @@ import (
 
 type Bridge struct {
 	ctx      context.Context
-	Profile  microsoft.MinecraftProfile
-	GameInfo GameInfo
-	Progress events.ProgressUpdateEventPayload
+	profile  microsoft.MinecraftProfile
+	gameInfo GameInfo
+	progress events.ProgressUpdateEventPayload
+	settings manager.ClientSettings
 }
 
 type ProfileInfo struct {
 	Username       string `json:"username"`
+	UUID           string `json:"uuid"`
 	ProfilePicture string `json:"profile_picture"`
 }
 
@@ -38,26 +40,19 @@ func InitBridge() *Bridge {
 
 /* JS API BEGIN */
 
-type ClientSettings struct {
-	KeepOpen         bool `json:"keep_open"`
-	Memory           int  `json:"memory"`
-	ResolutionWidth  int  `json:"resolution_width"`
-	ResolutionHeight int  `json:"resolution_height"`
-}
-
 // IsAuthenticated returns the authentication status
 func (a *Bridge) IsAuthenticated() bool {
-	return a.Profile.AccessToken != ""
+	return a.profile.AccessToken != ""
 }
 
 // GetProgress returns the progress, -1 when none
 func (a *Bridge) GetProgress() float64 {
-	return a.Progress.Progress
+	return a.progress.Progress
 }
 
 // GetProgressMessage returns the progress message, empty when none
 func (a *Bridge) GetProgressMessage() string {
-	return a.Progress.Message
+	return a.progress.Message
 }
 
 // GetWalletData returns wallet data
@@ -82,14 +77,14 @@ func (a *Bridge) Authenticate() (ProfileInfo, error) {
 	if err != nil {
 		return ProfileInfo{}, errors.New("failed to obtain minecraft profile")
 	}
-	a.Profile = profile
+	a.profile = profile
 
-	return ProfileInfo{profile.Name, ""}, nil
+	return ProfileInfo{profile.Name, profile.ID, ""}, nil
 }
 
 // GetGameInfo returns game information
 func (a *Bridge) GetGameInfo() GameInfo {
-	return a.GameInfo
+	return a.gameInfo
 }
 
 // GetHardwareInfo returns hardware information
@@ -116,20 +111,24 @@ func (a *Bridge) InstallGame() error {
 
 // LaunchGame launches the game, use GetProgress to monitor
 func (a *Bridge) LaunchGame() error {
-	if a.Profile.AccessToken != "" {
+	if a.profile.AccessToken != "" {
 		runtime.WindowHide(a.ctx)
 		games := manager.Explore()
 		games[0].Launch(manager.Auth{
-			Username:    a.Profile.Name,
-			AccessToken: a.Profile.AccessToken,
-			UUID:        a.Profile.ID,
-		})
+			Username:    a.profile.Name,
+			AccessToken: a.profile.AccessToken,
+			UUID:        a.profile.ID,
+		}, a.settings)
 		os.Exit(0)
 
 		return nil
 	} else {
 		return errors.New("not authorized")
 	}
+}
+
+func (a *Bridge) SetClientSettings(settings manager.ClientSettings) {
+	a.settings = settings
 }
 
 /* JS API END */
@@ -140,7 +139,7 @@ func (a *Bridge) Startup(ctx context.Context) {
 	// Perform your setup here
 	os.Chdir(comp.GetLauncherRoot())
 	a.ctx = ctx
-	a.GameInfo.IsInstalled = len(manager.Explore()) > 0
+	a.gameInfo.IsInstalled = len(manager.Explore()) > 0
 	progressHandler := progressUpdatedNotifier{
 		a,
 	}
@@ -152,5 +151,5 @@ type progressUpdatedNotifier struct {
 }
 
 func (p progressUpdatedNotifier) Handle(payload events.ProgressUpdateEventPayload) {
-	p.b.Progress = payload
+	p.b.progress = payload
 }

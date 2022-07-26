@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -47,6 +48,17 @@ type Version struct {
 	} `json:"downloads"`
 	Assets    string `json:"assets"`
 	Libraries []Library
+	Logging   struct {
+		Client struct {
+			Argument string `json:"argument"`
+		} `json:"client"`
+		File struct {
+			ID   string `json:"id"`
+			SHA1 string `json:"sha1"`
+			Size string `json:"size"`
+			Url  string `json:"url"`
+		} `json:"file"`
+	} `json:"logging"`
 }
 type Library struct {
 	Downloads struct {
@@ -88,6 +100,10 @@ type LaunchPlaceholders struct {
 	XUID             string `placeholder:"auth_xuid"`
 	UserType         string `placeholder:"user_type"`
 	VersionType      string `placeholder:"version_type"`
+	Width            int    `placeholder:"width"`
+	Height           int    `placeholder:"height"`
+	MaxRam           int    `placeholder:"max_ram"`
+	LogCfgPath       string `placeholder:"path"`
 }
 
 func GetManifest() (Manifest, error) {
@@ -121,7 +137,7 @@ func (v *Version) GetAssets() (map[string]Asset, error) {
 	return ret.Objects, nil
 }
 
-func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlaceholders, extraLibs []string) ([]string, []string) {
+func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlaceholders, extraLibs []string, extraArgs []string) ([]string, []string) {
 	var jvm []string
 	var game []string
 
@@ -134,10 +150,10 @@ func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlacehold
 			}
 		}
 		if strings.HasPrefix(s, "--xuid") {
-			return "" //FIXME
+			return string([]byte{0}) //FIXME
 		}
 		if strings.HasPrefix(s, "--clientId") {
-			return "" //FIXME
+			return string([]byte{0}) //FIXME
 		}
 
 		r := reflect.ValueOf(placeholders)
@@ -150,6 +166,14 @@ func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlacehold
 		cp = append(cp, gameJar)
 		return rpl(s, "classpath", strings.Join(cp, string(comp.GetSeparator())))
 	}
+
+	jvm = append(jvm, extraArgs...)
+	jvm = append(jvm, "-DFabricMcEmu=net.minecraft.client.main.Main") //TODO: dynamic ADD FABRIC JVM OPT
+	if placeholders.MaxRam%1024 != 0 {
+		placeholders.MaxRam = placeholders.MaxRam - placeholders.MaxRam%1024 // Align to 1024
+	}
+	jvm = append(jvm, "-Xmx"+strconv.Itoa(placeholders.MaxRam)+"k")
+	jvm = append(jvm, v.Logging.Client.Argument)
 
 	for _, a := range v.Arguments.JVM {
 		if reflect.TypeOf(a).Kind() == reflect.String {
@@ -173,14 +197,14 @@ func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlacehold
 		}
 	}
 
-	jvm = append(jvm, "-DFabricMcEmu=net.minecraft.client.main.Main") //TODO: dynamic ADD FABRIC JVM OPT
-	//TODO logging
-
 	for _, a := range v.Arguments.Game {
 		if reflect.TypeOf(a).Kind() == reflect.String {
 			game = append(game, replacePlaceholders(a.(string)))
 		}
 	}
+
+	game = append(game, "--width "+strconv.Itoa(placeholders.Width))
+	game = append(game, "--height "+strconv.Itoa(placeholders.Height))
 
 	return jvm, game
 }

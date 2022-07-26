@@ -73,7 +73,7 @@ func (h *MinecraftAuthHandle) GetMinecraftProfile() (MinecraftProfile, error) {
 }
 
 var (
-	cacheAccessor = &TokenCache{"cache.json"}
+	cacheAccessor = &TokenCache{"login_cache.json"}
 )
 
 func MSAuth() (MinecraftAuthHandle, error) {

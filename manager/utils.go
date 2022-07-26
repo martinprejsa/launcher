@@ -12,6 +12,7 @@ func findJAR(dir string) string {
 			return item.Name()
 		}
 	}
+
 	return ""
 }
 

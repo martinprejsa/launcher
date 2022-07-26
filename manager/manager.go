@@ -2,6 +2,7 @@ package manager
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"launcher/manager/comp"
 	"os"
@@ -16,12 +17,20 @@ type Profile struct {
 	JAR      string
 	Manifest Manifest
 	Version  Version
+	LogCfg   string
 }
 
 type Auth struct {
 	Username    string
 	AccessToken string
 	UUID        string
+}
+
+type ClientSettings struct {
+	Memory           int    `json:"memory"`
+	ResolutionWidth  int    `json:"resolution_width"`
+	ResolutionHeight int    `json:"resolution_height"`
+	JvmArgs          string `json:"jvm_args"`
 }
 
 func Explore() []Profile {
@@ -39,6 +48,7 @@ func Explore() []Profile {
 					JAR:      filepath.Join(comp.GetLauncherRoot(), "versions", profile.Name(), profile.Name()+".jar"),
 					Manifest: mf,
 					Version:  ver,
+					LogCfg:   filepath.Join(comp.GetLogCfgsPath(), ver.Logging.File.ID),
 				})
 		}
 	}
@@ -74,7 +84,7 @@ func CreateProfile(kind string) error {
 	return InstallTheOnlyProfile(comp.GetLauncherRoot())
 }
 
-func (p *Profile) Launch(auth Auth) {
+func (p *Profile) Launch(auth Auth, settings ClientSettings) {
 	parseFabricManifest := func() map[string]interface{} {
 		h, err := os.Open(p.Config)
 		if err != nil {
@@ -101,27 +111,35 @@ func (p *Profile) Launch(auth Auth) {
 		extra = append(extra, toPath(l.(map[string]interface{})["name"].(string)))
 	}
 
-	version := "1.19" //TODO this
+	version := "1.19" //TODO implement version
+
+	extraJvmArgs := strings.Split(settings.JvmArgs, " ")
 
 	jvm, game := p.Version.CreateCommandLine(p.JAR, LaunchPlaceholders{
-		".",
-		"Genecraft launcher",
-		"1.0",
-		auth.Username,
-		version,
-		comp.GetLauncherRoot(),
-		comp.GetAssetsPath(),
-		version,
-		auth.UUID,
-		auth.AccessToken,
-		"",
-		"",
-		"msa",
-		"release"}, extra)
+		NativesDirectory: ".",
+		LauncherName:     "Genecraft Launcher",
+		LauncherVersion:  "1.0",
+		Username:         auth.Username,
+		Version:          version,
+		GameDir:          comp.GetLauncherRoot(),
+		AssetDir:         comp.GetAssetsPath(),
+		AssetIndex:       version,
+		UUID:             auth.UUID,
+		AccessToken:      auth.AccessToken,
+		ClientID:         "",
+		XUID:             "",
+		UserType:         "msa",
+		VersionType:      "release",
+		Width:            settings.ResolutionWidth,
+		Height:           settings.ResolutionHeight,
+		MaxRam:           settings.Memory,
+		LogCfgPath:       p.LogCfg,
+	}, extra, extraJvmArgs)
 
 	args := append(jvm, fabricmf["mainClass"].(string))
 	args = append(args, game...)
 	cmd := exec.Command("java", args...)
+	fmt.Println(cmd.String())
 	//TODO: log command
 	cmd.Run()
 }

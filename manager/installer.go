@@ -36,6 +36,13 @@ func InstallTheOnlyProfile(dir string) error {
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10, Message: "Fetching manifest"})
 	mf, _ := GetManifest()
 	ver, _ := mf.GetLatestVersion()
+
+	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10, Message: "Downloading logging library"})
+	err = downloadLoggingLib(ver)
+	if err != nil {
+		return errors.WithMessage(err, "failed to download logging library")
+	}
+
 	_, err = downloadAssets(ver)
 	if err != nil {
 		return errors.WithMessage(err, "failed to download assets")
@@ -49,12 +56,35 @@ func InstallTheOnlyProfile(dir string) error {
 
 // PRIVATE REGION //
 
+func downloadLoggingLib(version Version) error {
+	r, err := http.Get(version.Logging.File.Url)
+	if err != nil {
+		return err
+	}
+	b, err := io.ReadAll(r.Body)
+
+	_ = os.MkdirAll(comp.GetLogCfgsPath(), os.ModePerm)
+
+	h, err := os.OpenFile(filepath.Join(comp.GetLogCfgsPath(), version.Logging.File.ID), os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer h.Close()
+	_, err = h.Write(b)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func installMinecraft(file string, version Version) error {
 	r, err := http.Get(version.Downloads["client"].Url)
 	if err != nil {
 		return err
 	}
 	b, err := io.ReadAll(r.Body)
+
+	_ = os.MkdirAll(filepath.Dir(file), os.ModePerm)
 
 	h, err := os.OpenFile(file, os.O_WRONLY, os.ModePerm)
 	if err != nil {
