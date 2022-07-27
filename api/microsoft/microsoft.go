@@ -9,10 +9,12 @@ import (
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 )
 
-type MinecraftAuthHandle struct {
+type MSAuthHandle struct {
 	AccessToken string
 }
 
@@ -52,7 +54,7 @@ type xblResponseDisplayClaims struct {
 
 const msalClientId = "048f6903-f7d2-47b7-8d7d-47a2fa08b0f7"
 
-func (h *MinecraftAuthHandle) GetMinecraftProfile() (MinecraftProfile, error) {
+func (h *MSAuthHandle) GetMinecraftProfile() (MinecraftProfile, error) {
 	req, _ := http.NewRequest("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
 	req.Header.Set("Authorization", "Bearer "+h.AccessToken)
 
@@ -73,31 +75,47 @@ func (h *MinecraftAuthHandle) GetMinecraftProfile() (MinecraftProfile, error) {
 }
 
 var (
-	cacheAccessor = &TokenCache{"login_cache.json"}
+	cacheName     = "login_cache.json"
+	cacheAccessor = &TokenCache{cacheName}
 )
 
-func MSAuth() (MinecraftAuthHandle, error) {
+var (
+	QuickAuthError = errors.New("quick auth failed")
+)
+
+func IsCachePresent(dir string) bool {
+	if _, err := os.Stat(filepath.Join(dir, cacheName)); err == os.ErrNotExist {
+		return false
+	} else {
+		return true
+	}
+}
+
+func MSAuth(quick bool) (MSAuthHandle, error) {
 	publicClientApp, err := public.New(msalClientId, public.WithAuthority("https://login.microsoftonline.com/consumers"), public.WithCache(cacheAccessor))
 
 	var userAccount public.Account
 	var accessToken string
 
-	var authenticate = func() (MinecraftAuthHandle, error) {
+	var authenticate = func() (MSAuthHandle, error) {
+		if quick {
+			return MSAuthHandle{}, QuickAuthError
+		}
 		if err != nil {
-			return MinecraftAuthHandle{}, errors.Errorf("failed to initialize MSAL client app: %s", err)
+			return MSAuthHandle{}, errors.Errorf("failed to initialize MSAL client app: %s", err)
 		}
 
 		interactive, err := publicClientApp.AcquireTokenInteractive(context.Background(), []string{"XboxLive.signin"})
 		if err != nil {
-			return MinecraftAuthHandle{}, errors.Errorf("token aquisiton failed: %s", err)
+			return MSAuthHandle{}, errors.Errorf("token aquisiton failed: %s", err)
 		}
 
-		accessToken, err = auth(interactive.AccessToken)
+		accessToken, err = getMCToken(interactive.AccessToken)
 		if !verifyGameOwnership(accessToken) {
-			return MinecraftAuthHandle{}, errors.New("failed to verify game-legacy ownership")
+			return MSAuthHandle{}, errors.New("failed to verify game-legacy ownership")
 		}
 
-		return MinecraftAuthHandle{AccessToken: accessToken}, err
+		return MSAuthHandle{AccessToken: accessToken}, err
 	}
 
 	accounts := publicClientApp.Accounts()
@@ -115,8 +133,8 @@ func MSAuth() (MinecraftAuthHandle, error) {
 			return authenticate()
 		} else {
 			fmt.Println("cache valid") //TODO: log
-			token, err := auth(result.AccessToken)
-			return MinecraftAuthHandle{token}, err
+			token, err := getMCToken(result.AccessToken)
+			return MSAuthHandle{token}, err
 		}
 	} else {
 		return authenticate()
@@ -127,7 +145,7 @@ func verifyGameOwnership(token string) bool {
 	return true //TODO implement
 }
 
-func auth(accessToken string) (string, error) {
+func getMCToken(accessToken string) (string, error) {
 	data := map[string]interface{}{
 		"RelyingParty": "http://auth.xboxlive.com", // Must be http
 		"TokenType":    "JWT",
@@ -182,12 +200,12 @@ func auth(accessToken string) (string, error) {
 			json.Unmarshal(b, &jsonResponse)
 			token := jsonResponse["Token"].(string)
 			uhs := xblr.DisplayClaims.Xui[0]["uhs"].(string)
-			return minecraftAuth(token, uhs), nil
+			return fetchMCToken(token, uhs), nil
 		}
 	}
 }
 
-func minecraftAuth(xstx string, uhs string) string {
+func fetchMCToken(xstx string, uhs string) string {
 	body := map[string]interface{}{}
 
 	body["identityToken"] = "XBL3.0 x=" + uhs + ";" + xstx
