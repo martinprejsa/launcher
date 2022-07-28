@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -27,10 +28,10 @@ type Auth struct {
 }
 
 type ClientSettings struct {
-	Memory           int    `json:"memory"`
-	ResolutionWidth  int    `json:"resolution_width"`
-	ResolutionHeight int    `json:"resolution_height"`
-	JvmArgs          string `json:"jvm_args"`
+	Memory  int    `json:"memory"`
+	Width   int    `json:"width"`
+	Height  int    `json:"height"`
+	JvmArgs string `json:"jvm_args"`
 }
 
 func Explore() []Profile {
@@ -48,7 +49,7 @@ func Explore() []Profile {
 					JAR:      filepath.Join(comp.GetLauncherRoot(), "versions", profile.Name(), profile.Name()+".jar"),
 					Manifest: mf,
 					Version:  ver,
-					LogCfg:   filepath.Join(comp.GetLogCfgsPath(), ver.Logging.File.ID),
+					LogCfg:   filepath.Join(comp.GetLogCfgsPath(), ver.Logging.Client.File.Url),
 				})
 		}
 	}
@@ -130,9 +131,9 @@ func (p *Profile) Launch(auth Auth, settings ClientSettings) {
 		XUID:             "",
 		UserType:         "msa",
 		VersionType:      "release",
-		Width:            settings.ResolutionWidth,
-		Height:           settings.ResolutionHeight,
-		MaxRam:           settings.Memory,
+		Width:            strconv.Itoa(settings.Width),
+		Height:           strconv.Itoa(settings.Height),
+		MaxRam:           strconv.Itoa(settings.Memory),
 		LogCfgPath:       p.LogCfg,
 	}, extra, extraJvmArgs)
 
@@ -141,5 +142,6 @@ func (p *Profile) Launch(auth Auth, settings ClientSettings) {
 	cmd := exec.Command("java", args...)
 	fmt.Println(cmd.String())
 	//TODO: log command
-	cmd.Run()
+	//cmd.Run()
+	fmt.Println(cmd.CombinedOutput())
 }

@@ -171,6 +171,9 @@ func getMCToken(accessToken string) (string, error) {
 		b, _ := ioutil.ReadAll(response.Body)
 		var xblr xblResponse
 		_ = json.Unmarshal(b, &xblr)
+		if xblr.Token == "" {
+			return "", errors.New("failed to authorize with xbox")
+		}
 
 		body := map[string]interface{}{
 			"Properties": map[string]interface{}{
@@ -197,7 +200,10 @@ func getMCToken(accessToken string) (string, error) {
 		} else {
 			b, _ := ioutil.ReadAll(response.Body)
 			var jsonResponse map[string]interface{}
-			json.Unmarshal(b, &jsonResponse)
+			_ = json.Unmarshal(b, &jsonResponse)
+			if jsonResponse == nil {
+				return "", errors.New("failed to authorize xbox security")
+			}
 			token := jsonResponse["Token"].(string)
 			uhs := xblr.DisplayClaims.Xui[0]["uhs"].(string)
 			return fetchMCToken(token, uhs), nil

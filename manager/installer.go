@@ -29,19 +29,18 @@ func InstallTheOnlyProfile(dir string) error {
 
 	err = installFabric(installer, dir, "1.19") // TODO: fetch version
 	//TODO download and install fabric manually
-
+	fmt.Println("-3")
 	if err != nil {
 		return errors.WithMessage(err, "failed to install fabric")
 	}
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10, Message: "Fetching manifest"})
 	mf, _ := GetManifest()
 	ver, _ := mf.GetLatestVersion()
-
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10, Message: "Downloading logging library"})
-	err = downloadLoggingLib(ver)
-	if err != nil {
-		return errors.WithMessage(err, "failed to download logging library")
-	}
+	//err = downloadLoggingLib(ver)
+	//if err != nil {
+	//	return errors.WithMessage(err, "failed to download logging library")
+	//}
 
 	_, err = downloadAssets(ver)
 	if err != nil {
@@ -57,7 +56,8 @@ func InstallTheOnlyProfile(dir string) error {
 // PRIVATE REGION //
 
 func downloadLoggingLib(version Version) error {
-	r, err := http.Get(version.Logging.File.Url)
+	r, err := http.Get(version.Logging.Client.File.Url)
+	fmt.Println(version.Logging.Client.File.Url)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func downloadLoggingLib(version Version) error {
 
 	_ = os.MkdirAll(comp.GetLogCfgsPath(), os.ModePerm)
 
-	h, err := os.OpenFile(filepath.Join(comp.GetLogCfgsPath(), version.Logging.File.ID), os.O_WRONLY, os.ModePerm)
+	h, err := os.OpenFile(filepath.Join(comp.GetLogCfgsPath(), version.Logging.Client.File.Url), os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -151,6 +151,7 @@ func downloadAssets(ver Version) ([]string, error) {
 	var progress = 10.0
 
 	var counter = 1
+
 	for name, asset := range asts {
 		var download = func() {
 			res, err := downloadAsset(asset)
