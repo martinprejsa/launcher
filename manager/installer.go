@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"launcher/events"
+	"launcher/logging"
 	"launcher/manager/comp"
 	"net/http"
 	"os"
@@ -26,9 +27,11 @@ func InstallTheOnlyProfile(dir string) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to download fabric installer")
 	}
+	logging.Logger.Print("Downloaded fabric to " + installer)
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 5, Message: "Installing fabric"})
 
 	err = installFabric(installer, dir, GlobalMinecraftVersion) // TODO: fetch version
+	logging.Logger.Print("Fabric installed to " + dir)
 	//TODO download and install fabric manually
 	if err != nil {
 		return errors.WithMessage(err, "failed to install fabric")

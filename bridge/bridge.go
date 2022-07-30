@@ -3,13 +3,17 @@ package bridge
 import (
 	"context"
 	"github.com/pkg/errors"
+	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"launcher/api/microsoft"
 	"launcher/events"
+	"launcher/logging"
 	"launcher/manager"
 	"launcher/manager/comp"
 	"launcher/memory"
 	"os"
+	"path/filepath"
+	"time"
 )
 
 type Bridge struct {
@@ -35,12 +39,16 @@ type GameInfo struct {
 }
 
 func InitBridge() *Bridge {
+	file := filepath.Join(comp.GetLauncherRoot(), "launcher-logs", time.Now().Format("2006-01-02-15:04:05")+".log")
+
+	logging.Logger = logger.NewFileLogger(file)
+	logging.Logger.Print("Initialized")
 	return &Bridge{}
 }
 
 /* JS API BEGIN */
 
-// IsLoginCachePresent returns if cache if present
+// IsLoginCachePresent returns if cache is present
 func (a *Bridge) IsLoginCachePresent() bool {
 	return microsoft.IsCachePresent(comp.GetLauncherRoot())
 }
@@ -80,6 +88,7 @@ func (a *Bridge) GetWardrobeData() string {
 func (a *Bridge) QuickAuth() (ProfileInfo, error) {
 	rsp, err := microsoft.MSAuth(true)
 	if err == microsoft.QuickAuthError {
+		logging.Logger.Error("Quick auth failed")
 		return ProfileInfo{}, err
 	}
 	return a.getProfile(rsp)
@@ -89,6 +98,7 @@ func (a *Bridge) QuickAuth() (ProfileInfo, error) {
 func (a *Bridge) Authenticate() (ProfileInfo, error) {
 	rsp, err := microsoft.MSAuth(false)
 	if err != nil {
+		logging.Logger.Error("Failed to authorize: " + err.Error())
 		return ProfileInfo{}, errors.New("failed to authorize")
 	}
 
@@ -112,12 +122,14 @@ func (a *Bridge) InstallGame() error {
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0, Message: "Creating profile"})
 	err := manager.CreateProfile("latest")
 	if err != nil {
+		logging.Logger.Error("Failed to create profile, caused by: " + err.Error())
 		return errors.WithMessage(err, "failed to create profile")
 	}
 	games := manager.Explore()
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 90, Message: "Installing Minecraft"})
 	err = games[0].InstallMinecraft()
 	if err != nil {
+		logging.Logger.Error("Failed to install minecraft, caused by: " + err.Error())
 		return errors.WithMessage(err, "failed to install native minecraft client")
 	}
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 100, Message: "Finishing up"})
@@ -154,6 +166,7 @@ func (a *Bridge) SetClientSettings(settings manager.ClientSettings) {
 func (a *Bridge) getProfile(handle microsoft.MSAuthHandle) (ProfileInfo, error) {
 	profile, err := handle.GetMinecraftProfile()
 	if err != nil {
+		logging.Logger.Error("Failed to obtain minecraft profile info, caused by: " + err.Error())
 		return ProfileInfo{}, errors.New("failed to obtain minecraft profile")
 	}
 	a.profile = profile
@@ -166,7 +179,7 @@ func (a *Bridge) getProfile(handle microsoft.MSAuthHandle) (ProfileInfo, error) 
 
 func (a *Bridge) Startup(ctx context.Context) {
 	// Perform your setup here
-	os.Chdir(comp.GetLauncherRoot())
+	_ = os.Chdir(comp.GetLauncherRoot())
 	a.ctx = ctx
 	a.gameInfo.IsInstalled = len(manager.Explore()) > 0
 	progressHandler := progressUpdatedNotifier{

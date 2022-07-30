@@ -15,14 +15,9 @@ import (
 //go:embed frontend/dist
 var assets embed.FS
 
-var Flog logger.FileLogger
-
-func GetFileLog() logger.FileLogger {
-	return Flog
-}
-
 func main() {
 	b := bridge.InitBridge()
+	defaultLogger := logger.DefaultLogger{}
 
 	opts := &options.App{
 		Title:            "Genecraft Launcher",
@@ -43,6 +38,6 @@ func main() {
 	err := wails.Run(opts)
 
 	if err != nil {
-		Flog.Error(fmt.Sprintf("failed to initialize application: %s", err))
+		defaultLogger.Error(fmt.Sprintf("failed to initialize application: %s", err))
 	}
 }
