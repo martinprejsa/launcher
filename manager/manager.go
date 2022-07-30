@@ -2,7 +2,6 @@ package manager
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"launcher/manager/comp"
 	"os"
@@ -141,13 +140,10 @@ func (p *Profile) Launch(auth Auth, settings ClientSettings) error {
 	args := append(jvm, fabricmf["mainClass"].(string))
 	args = append(args, game...)
 	cmd := exec.Command("java", args...)
-	for _, a := range args {
-		fmt.Println(a)
-	}
-	fmt.Println(cmd.String())
+	cmd.Dir = comp.GetLauncherRoot()
+	cmd.Stdout = nil
+
 	//TODO: log command
-	//cmd.Run()
-	b, err := cmd.CombinedOutput()
-	fmt.Println(string(b))
+	err := cmd.Run()
 	return err
 }

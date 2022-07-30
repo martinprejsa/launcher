@@ -35,21 +35,20 @@ func InstallTheOnlyProfile(dir string) error {
 	}
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10, Message: "Fetching manifest"})
 	mf, _ := GetManifest()
-	ver, err := mf.GetVersion(GlobalMinecraftVersion)
-	fmt.Println(err)
+	ver, _ := mf.GetVersion(GlobalMinecraftVersion)
+	//TODO error check
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10, Message: "Downloading logging library"})
-	//err = downloadLoggingLib(ver)
-	//if err != nil {
-	//	return errors.WithMessage(err, "failed to download logging library")
-	//}
+	err = downloadLoggingLib(ver)
+	if err != nil {
+		return errors.WithMessage(err, "failed to download logging library")
+	}
 
 	asts, err := ver.GetAssets()
 	if err != nil {
 		return errors.WithMessage(err, "failed to download asset index")
 	}
 	_ = os.MkdirAll(comp.GetIndexesPath(), os.ModePerm)
-	fmt.Println(filepath.Join(comp.GetIndexesPath(), ver.AssetIndex.ID+".json"))
-	h, err := os.OpenFile(filepath.Join(comp.GetIndexesPath(), ver.AssetIndex.ID+".json"), os.O_WRONLY, os.ModePerm)
+	h, err := os.Create(filepath.Join(comp.GetIndexesPath(), ver.AssetIndex.ID+".json"))
 	b, _ := json.Marshal(asts)
 	_, err = h.Write(b)
 	if err != nil {
@@ -72,7 +71,6 @@ func InstallTheOnlyProfile(dir string) error {
 
 func downloadLoggingLib(version Version) error {
 	r, err := http.Get(version.Logging.Client.File.Url)
-	fmt.Println(version.Logging.Client.File.Url)
 	if err != nil {
 		return err
 	}
@@ -80,7 +78,7 @@ func downloadLoggingLib(version Version) error {
 
 	_ = os.MkdirAll(comp.GetLogCfgsPath(), os.ModePerm)
 
-	h, err := os.OpenFile(filepath.Join(comp.GetLogCfgsPath(), version.Logging.Client.File.Url), os.O_WRONLY, os.ModePerm)
+	h, err := os.Create(filepath.Join(comp.GetLogCfgsPath(), version.Logging.Client.File.ID))
 	if err != nil {
 		return err
 	}

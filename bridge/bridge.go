@@ -2,7 +2,6 @@ package bridge
 
 import (
 	"context"
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"launcher/api/microsoft"
@@ -112,7 +111,9 @@ func (a *Bridge) GetHardwareInfo() HardwareInfo {
 func (a *Bridge) InstallGame() error {
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0, Message: "Creating profile"})
 	err := manager.CreateProfile("latest")
-	fmt.Println(err)
+	if err != nil {
+		return errors.WithMessage(err, "failed to create profile")
+	}
 	games := manager.Explore()
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 90, Message: "Installing Minecraft"})
 	err = games[0].InstallMinecraft()
