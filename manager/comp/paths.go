@@ -13,3 +13,7 @@ func GetAssetsPath() string {
 func GetLogCfgsPath() string {
 	return filepath.Join(GetAssetsPath(), "log_cfgs")
 }
+
+func GetIndexesPath() string {
+	return filepath.Join(GetAssetsPath(), "indexes")
+}

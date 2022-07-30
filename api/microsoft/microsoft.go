@@ -118,6 +118,10 @@ func MSAuth(quick bool) (MSAuthHandle, error) {
 		return MSAuthHandle{AccessToken: accessToken}, err
 	}
 
+	if quick == false {
+		return authenticate()
+	}
+
 	accounts := publicClientApp.Accounts()
 	if len(accounts) > 0 {
 		userAccount = accounts[0]

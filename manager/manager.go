@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -41,7 +40,7 @@ func Explore() []Profile {
 	for _, profile := range dir {
 		if profile.IsDir() {
 			mf, _ := GetManifest()
-			ver, _ := mf.GetLatestVersion() //TODO version
+			ver, _ := mf.GetVersion(GlobalMinecraftVersion) //TODO version
 			profiles = append(
 				profiles, Profile{
 					Name:     profile.Name(),
@@ -85,7 +84,7 @@ func CreateProfile(kind string) error {
 	return InstallTheOnlyProfile(comp.GetLauncherRoot())
 }
 
-func (p *Profile) Launch(auth Auth, settings ClientSettings) {
+func (p *Profile) Launch(auth Auth, settings ClientSettings) error {
 	parseFabricManifest := func() map[string]interface{} {
 		h, err := os.Open(p.Config)
 		if err != nil {
@@ -112,7 +111,7 @@ func (p *Profile) Launch(auth Auth, settings ClientSettings) {
 		extra = append(extra, toPath(l.(map[string]interface{})["name"].(string)))
 	}
 
-	version := "1.19" //TODO implement version
+	version := GlobalMinecraftVersion //TODO implement version
 
 	extraJvmArgs := strings.Split(settings.JvmArgs, " ")
 
@@ -131,17 +130,24 @@ func (p *Profile) Launch(auth Auth, settings ClientSettings) {
 		XUID:             "",
 		UserType:         "msa",
 		VersionType:      "release",
-		Width:            strconv.Itoa(settings.Width),
-		Height:           strconv.Itoa(settings.Height),
-		MaxRam:           strconv.Itoa(settings.Memory),
 		LogCfgPath:       p.LogCfg,
-	}, extra, extraJvmArgs)
+	}, LaunchOptions{
+		Width:  settings.Width,
+		Height: settings.Height,
+		MaxRam: settings.Memory,
+	},
+		extra, extraJvmArgs)
 
 	args := append(jvm, fabricmf["mainClass"].(string))
 	args = append(args, game...)
 	cmd := exec.Command("java", args...)
+	for _, a := range args {
+		fmt.Println(a)
+	}
 	fmt.Println(cmd.String())
 	//TODO: log command
 	//cmd.Run()
-	fmt.Println(cmd.CombinedOutput())
+	b, err := cmd.CombinedOutput()
+	fmt.Println(string(b))
+	return err
 }

@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"launcher/api/microsoft"
@@ -111,6 +112,7 @@ func (a *Bridge) GetHardwareInfo() HardwareInfo {
 func (a *Bridge) InstallGame() error {
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0, Message: "Creating profile"})
 	err := manager.CreateProfile("latest")
+	fmt.Println(err)
 	games := manager.Explore()
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 90, Message: "Installing Minecraft"})
 	err = games[0].InstallMinecraft()
@@ -127,7 +129,7 @@ func (a *Bridge) LaunchGame() error {
 	if a.profile.AccessToken != "" {
 		runtime.WindowHide(a.ctx)
 		games := manager.Explore()
-		games[0].Launch(manager.Auth{
+		_ = games[0].Launch(manager.Auth{
 			Username:    a.profile.Name,
 			AccessToken: a.profile.AccessToken,
 			UUID:        a.profile.ID,

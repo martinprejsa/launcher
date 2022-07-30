@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.5.2
 	github.com/pkg/errors v0.9.1
-	github.com/wailsapp/wails/v2 v2.0.0-beta.38
+	github.com/wailsapp/wails/v2 v2.0.0-beta.42
 )
 
 require (

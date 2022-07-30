@@ -2,6 +2,7 @@ package manager
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"io"
@@ -27,22 +28,36 @@ func InstallTheOnlyProfile(dir string) error {
 	}
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 5, Message: "Installing fabric"})
 
-	err = installFabric(installer, dir, "1.19") // TODO: fetch version
+	err = installFabric(installer, dir, GlobalMinecraftVersion) // TODO: fetch version
 	//TODO download and install fabric manually
-	fmt.Println("-3")
 	if err != nil {
 		return errors.WithMessage(err, "failed to install fabric")
 	}
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10, Message: "Fetching manifest"})
 	mf, _ := GetManifest()
-	ver, _ := mf.GetLatestVersion()
+	ver, err := mf.GetVersion(GlobalMinecraftVersion)
+	fmt.Println(err)
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 10, Message: "Downloading logging library"})
 	//err = downloadLoggingLib(ver)
 	//if err != nil {
 	//	return errors.WithMessage(err, "failed to download logging library")
 	//}
 
-	_, err = downloadAssets(ver)
+	asts, err := ver.GetAssets()
+	if err != nil {
+		return errors.WithMessage(err, "failed to download asset index")
+	}
+	_ = os.MkdirAll(comp.GetIndexesPath(), os.ModePerm)
+	fmt.Println(filepath.Join(comp.GetIndexesPath(), ver.AssetIndex.ID+".json"))
+	h, err := os.OpenFile(filepath.Join(comp.GetIndexesPath(), ver.AssetIndex.ID+".json"), os.O_WRONLY, os.ModePerm)
+	b, _ := json.Marshal(asts)
+	_, err = h.Write(b)
+	if err != nil {
+		return errors.WithMessage(err, "failed to write asset index")
+	}
+	_ = h.Close()
+
+	_, err = downloadAssets(asts)
 	if err != nil {
 		return errors.WithMessage(err, "failed to download assets")
 	}
@@ -129,12 +144,14 @@ func installFabric(installer string, dir string, version string) error {
 	//TODO included java bin
 	cmd := exec.Command("java", "-jar", installer, "client", "-dir", dir, "-mcversion", version)
 
+	//b, _ := cmd.CombinedOutput()
+	//fmt.Println(string(b))
 	_ = cmd.Run() //FIXME: ignored, but check java first
 
 	return nil
 }
 
-func downloadAssets(ver Version) ([]string, error) {
+func downloadAssets(asts map[string]Asset) ([]string, error) {
 	if _, err := os.Stat(comp.GetAssetsPath()); err != nil {
 		err := os.MkdirAll(comp.GetAssetsPath(), os.ModePerm)
 		if err != nil {
@@ -142,10 +159,6 @@ func downloadAssets(ver Version) ([]string, error) {
 		}
 	}
 	var paths []string
-	asts, err := ver.GetAssets()
-	if err != nil {
-		return []string{}, err
-	}
 
 	piece := float64(40) / float64(len(asts))
 	var progress = 10.0
