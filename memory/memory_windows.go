@@ -12,7 +12,7 @@ func GetMemoryTotal() int {
 	var proc = mod.NewProc("GetPhysicallyInstalledSystemMemory")
 	var mem uint64 = 0
 
-	ret, _, _ = proc.Call(uintptr(unsafe.Pointer(&mem)))
+	ret, _, _ := proc.Call(uintptr(unsafe.Pointer(&mem)))
 	if ret != 1 || mem == 0 {
 		return -1
 	}
