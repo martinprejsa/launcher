@@ -151,14 +151,20 @@ func (a *Bridge) LaunchGame() error {
 	if a.profile.AccessToken != "" {
 		runtime.WindowHide(a.ctx)
 		games := manager.Explore()
-		_ = games[0].Launch(manager.LauncherAuth{
+
+		err := games[0].Launch(manager.LauncherAuth{
 			Username:    a.profile.Name,
 			AccessToken: a.profile.AccessToken,
 			UUID:        a.profile.ID,
 		}, a.settings)
-		os.Exit(0)
 
-		return nil
+		if err != nil {
+			return errors.WithMessage(err, "failed to launch game")
+		} else {
+			os.Exit(0)
+			return nil
+		}
+
 	} else {
 		return errors.New("not authorized")
 	}

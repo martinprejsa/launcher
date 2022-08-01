@@ -176,7 +176,7 @@ func downloadAssets(asts map[string]Asset) ([]string, error) {
 			paths = append(paths, filepath.Join(comp.GetAssetsPath(), name))
 
 			progress += piece
-			events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress, Message: fmt.Sprintf("Downloading assets %d/%d", counter, len(asts))})
+			events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress, Message: fmt.Sprintf("Downloading asset %d/%d", counter, len(asts))})
 
 			counter++
 		}
@@ -204,7 +204,7 @@ func downloadLibraries(ver Version) ([]string, error) {
 		}
 		progress += piece
 
-		events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress, Message: fmt.Sprintf("Downloading libraries %d/%d", i+1, len(ver.Libraries))})
+		events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: progress, Message: fmt.Sprintf("Downloading library %d/%d", i+1, len(ver.Libraries))})
 		paths = append(paths, filepath.Join(comp.GetLibraryPath(), library.Downloads.Artifact.Path))
 	}
 	return paths, nil
