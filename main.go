@@ -16,7 +16,7 @@ import (
 var assets embed.FS
 
 func main() {
-	b := bridge.InitBridge()
+	b, _ := bridge.InitBridge() // TODO: handle error
 	defaultLogger := logger.DefaultLogger{}
 
 	opts := &options.App{

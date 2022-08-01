@@ -38,12 +38,15 @@ type GameInfo struct {
 	IsInstalled bool `json:"isInstalled"`
 }
 
-func InitBridge() *Bridge {
+func InitBridge() (*Bridge, error) {
 	file := filepath.Join(comp.GetLauncherRoot(), "launcher-logs", time.Now().Format("2006-01-02-15:04:05")+".log")
-
+	err := os.MkdirAll(filepath.Join(comp.GetLauncherRoot(), "launcher-logs"), os.ModePerm)
+	if err != nil {
+		return &Bridge{}, errors.WithMessage(err, "failed to initialize bridge")
+	}
 	logging.Logger = logger.NewFileLogger(file)
 	logging.Logger.Print("Initialized")
-	return &Bridge{}
+	return &Bridge{}, nil
 }
 
 /* JS API BEGIN */

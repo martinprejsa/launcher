@@ -3,5 +3,12 @@
   "outputfilename": "launcher",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
-  "frontend:dev": "npm run build"
+  "wailsjsdir": "frontend/src",
+  "version": "1.0.0",
+  "info": {
+    "companyName": "Genecraft",
+    "productName": "Genecraft Launcher",
+    "productVersion": "1.0.0",
+    "comments": "Genecraft Launcher made by the Metamarket services"
+  }
 }
