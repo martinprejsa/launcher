@@ -120,6 +120,12 @@ func (a *Bridge) GetHardwareInfo() HardwareInfo {
 	}
 }
 
+func (a *Bridge) GetCurrentSettings() manager.LauncherClientSettings {
+	return manager.LauncherClientSettings{
+		Memory: 2097152, Width: 800, Height: 600,
+	}
+}
+
 // InstallGame installs the game, can be used for reinstall, use GetProgress to monitor
 func (a *Bridge) InstallGame() error {
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 0, Message: "Creating profile"})
