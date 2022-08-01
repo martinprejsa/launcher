@@ -21,7 +21,7 @@ type Bridge struct {
 	profile  microsoft.MinecraftProfile
 	gameInfo GameInfo
 	progress events.ProgressUpdateEventPayload
-	settings manager.ClientSettings
+	settings manager.LauncherClientSettings
 }
 
 type ProfileInfo struct {
@@ -145,7 +145,7 @@ func (a *Bridge) LaunchGame() error {
 	if a.profile.AccessToken != "" {
 		runtime.WindowHide(a.ctx)
 		games := manager.Explore()
-		_ = games[0].Launch(manager.Auth{
+		_ = games[0].Launch(manager.LauncherAuth{
 			Username:    a.profile.Name,
 			AccessToken: a.profile.AccessToken,
 			UUID:        a.profile.ID,
@@ -158,7 +158,7 @@ func (a *Bridge) LaunchGame() error {
 	}
 }
 
-func (a *Bridge) SetClientSettings(settings manager.ClientSettings) {
+func (a *Bridge) SetClientSettings(settings manager.LauncherClientSettings) {
 	a.settings = settings
 }
 

@@ -237,7 +237,7 @@ func codeToString(code resourceStatus) string {
 
 func downloadAsset(a Asset) (resourceStatus, error) {
 	dir := comp.GetAssetsPath()
-	if _, err := os.Stat(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash)); err == nil {
+	if _, err := os.Stat(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash)); err != os.ErrNotExist {
 		if checkSHA1Hash(filepath.Join(dir, "objects", a.Hash[0:2], a.Hash), a.Hash) {
 			return Skipped, nil // Already exists, skip
 		}
@@ -285,7 +285,7 @@ func downloadLibrary(lib Library) (resourceStatus, error) {
 		return NotRequired, nil // Not required on this system, skip
 	}
 
-	if _, err := os.Stat(filepath.Join(dir, lib.Downloads.Artifact.Path)); err == nil {
+	if _, err := os.Stat(filepath.Join(dir, lib.Downloads.Artifact.Path)); err != os.ErrNotExist {
 		if checkSHA1Hash(filepath.Join(dir, lib.Downloads.Artifact.Path), lib.Downloads.Artifact.SHA1) {
 			return Skipped, nil // Already exists, skip
 		}

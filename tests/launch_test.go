@@ -50,11 +50,11 @@ func Test(t *testing.T) {
 	}
 
 	t.Log("Launching game")
-	err = games[0].Launch(manager.Auth{
+	err = games[0].Launch(manager.LauncherAuth{
 		Username:    profile.Name,
 		AccessToken: profile.AccessToken,
 		UUID:        profile.ID,
-	}, manager.ClientSettings{
+	}, manager.LauncherClientSettings{
 		Memory:  0,
 		Width:   0,
 		Height:  0,
