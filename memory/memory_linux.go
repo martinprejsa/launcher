@@ -20,7 +20,7 @@ func GetMemoryTotal() int {
 	if err != nil {
 		return -1
 	}
-	res, err := strconv.Atoi(strings.Fields(line)[2])
+	res, err := strconv.Atoi(strings.Fields(line)[1])
 	if err != nil {
 		return -1
 	}
