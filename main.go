@@ -30,6 +30,7 @@ func main() {
 		Assets:           assets,
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        b.Startup,
+		OnBeforeClose:    b.TerminateBridge,
 		Bind: []interface{}{
 			b,
 		},

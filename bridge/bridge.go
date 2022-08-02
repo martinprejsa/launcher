@@ -2,9 +2,12 @@ package bridge
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"io/ioutil"
 	"launcher/api/microsoft"
 	"launcher/events"
 	"launcher/logging"
@@ -39,14 +42,39 @@ type GameInfo struct {
 }
 
 func InitBridge() (*Bridge, error) {
+	var bridge Bridge
+
 	file := filepath.Join(comp.GetLauncherRoot(), "launcher-logs", time.Now().Format("2006-01-02-15-04-05")+".log")
 	err := os.MkdirAll(filepath.Join(comp.GetLauncherRoot(), "launcher-logs"), os.ModePerm)
 	if err != nil {
-		return &Bridge{}, errors.WithMessage(err, "failed to initialize bridge")
+		return &Bridge{}, errors.WithMessage(err, "failed to create directory launcher-logs in launcher root directory")
 	}
 	logging.Logger = logger.NewFileLogger(file)
 	logging.Logger.Print("Initialized")
-	return &Bridge{}, nil
+
+	data, err := ioutil.ReadFile(filepath.Join(comp.GetLauncherRoot(), "launcher_config.json"))
+	if err == nil {
+		var settings manager.LauncherClientSettings
+		err := json.Unmarshal(data, &settings)
+		if err != nil {
+			logging.Logger.Warning("failed to parse launcher_config.json: " + err.Error())
+			fmt.Println("eyo2")
+		} else {
+			bridge.settings = settings
+		}
+	} else {
+		logging.Logger.Warning("failed to read launcher_config.json: " + err.Error())
+	}
+	return &bridge, nil
+}
+
+func (a *Bridge) TerminateBridge(ctx context.Context) bool {
+	b, _ := json.Marshal(a.settings)
+	err := ioutil.WriteFile(filepath.Join(comp.GetLauncherRoot(), "launcher_config.json"), b, os.ModePerm)
+	if err != nil {
+		return false
+	}
+	return false
 }
 
 /* JS API BEGIN */
@@ -121,9 +149,7 @@ func (a *Bridge) GetHardwareInfo() HardwareInfo {
 }
 
 func (a *Bridge) GetCurrentSettings() manager.LauncherClientSettings {
-	return manager.LauncherClientSettings{
-		Memory: 2097152, Width: 800, Height: 600,
-	}
+	return a.settings
 }
 
 // InstallGame installs the game, can be used for reinstall, use GetProgress to monitor

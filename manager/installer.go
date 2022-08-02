@@ -30,7 +30,7 @@ func InstallTheOnlyProfile(dir string) error {
 	logging.Logger.Print("Downloaded fabric to " + installer)
 	events.ProgressUpdateEvent.Trigger(events.ProgressUpdateEventPayload{Progress: 5, Message: "Installing fabric"})
 
-	err = installFabric(installer, dir, GlobalMinecraftVersion) // TODO: fetch version
+	err = installFabric(installer, dir, GlobalMinecraftVersion)
 	logging.Logger.Print("Fabric installed to " + dir)
 	//TODO download and install fabric manually
 	if err != nil {
@@ -46,20 +46,23 @@ func InstallTheOnlyProfile(dir string) error {
 		return errors.WithMessage(err, "failed to download logging library")
 	}
 
-	asts, err := ver.GetAssets()
-	if err != nil {
-		return errors.WithMessage(err, "failed to download asset index")
-	}
 	_ = os.MkdirAll(comp.GetIndexesPath(), os.ModePerm)
 	h, err := os.Create(filepath.Join(comp.GetIndexesPath(), ver.AssetIndex.ID+".json"))
-	b, _ := json.Marshal(asts)
+	var data map[string]interface{}
+
+	err = receiveJSONObject(ver.AssetIndex.Url, &data)
+	if err != nil {
+		return errors.WithMessage(err, "failed to asset index")
+	}
+
+	b, _ := json.Marshal(data)
 	_, err = h.Write(b)
 	if err != nil {
 		return errors.WithMessage(err, "failed to write asset index")
 	}
 	_ = h.Close()
 
-	_, err = downloadAssets(asts)
+	_, err = downloadAssets(ver)
 	if err != nil {
 		return errors.WithMessage(err, "failed to download assets")
 	}
@@ -152,12 +155,16 @@ func installFabric(installer string, dir string, version string) error {
 	return nil
 }
 
-func downloadAssets(asts map[string]Asset) ([]string, error) {
+func downloadAssets(version Version) ([]string, error) {
 	if _, err := os.Stat(comp.GetAssetsPath()); err != nil {
 		err := os.MkdirAll(comp.GetAssetsPath(), os.ModePerm)
 		if err != nil {
 			return []string{}, err
 		}
+	}
+	asts, err := version.GetAssets()
+	if err != nil {
+		return []string{}, err
 	}
 	var paths []string
 
@@ -169,9 +176,9 @@ func downloadAssets(asts map[string]Asset) ([]string, error) {
 	for name, asset := range asts {
 		var download = func() {
 			res, err := downloadAsset(asset)
-			fmt.Printf("[%d/%d] ASSET: %s %s\n", counter, len(asts), codeToString(res), name) //TODO: log
+			//fmt.Printf("[%d/%d] ASSET: %s %s\n", counter, len(asts), codeToString(res), name) //TODO: log
 			if res == Failed {
-				fmt.Printf("\tcaused by: %s\n", err) //TODO: log
+				logging.Logger.Error("Failed to download asset " + name + "\n\tcaused by: " + err.Error())
 			}
 			paths = append(paths, filepath.Join(comp.GetAssetsPath(), name))
 
@@ -198,9 +205,9 @@ func downloadLibraries(ver Version) ([]string, error) {
 			//TODO: log
 			return []string{}, err
 		}
-		fmt.Printf("[%d/%d] LIBRARY: %s %s \n", i+1, len(ver.Libraries), codeToString(res), library.Name) //TODO: log
+		//fmt.Printf("[%d/%d] LIBRARY: %s %s \n", i+1, len(ver.Libraries), codeToString(res), library.Name) //TODO: log
 		if res == Failed {
-			fmt.Printf("\tcaused by: %s\n", err) //TODO: log
+			logging.Logger.Error("Failed to download library " + library.Name + "\n\tcaused by: " + err.Error())
 		}
 		progress += piece
 

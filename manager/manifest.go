@@ -141,7 +141,7 @@ func (v *Version) GetAssets() (map[string]Asset, error) {
 	return ret.Objects, nil
 }
 
-func (v *Version) SCreateCommandLine(gameJar string, placeholders LaunchPlaceholders, opts LaunchOptions, extraLibs []string, extraArgs []string) ([]string, []string) {
+func (v *Version) CreateCommandLine(gameJar string, placeholders LaunchPlaceholders, opts LaunchOptions, extraLibs []string, extraArgs []string) ([]string, []string) {
 	var jvm []string
 	var game []string
 
@@ -214,8 +214,8 @@ func (v *Version) SCreateCommandLine(gameJar string, placeholders LaunchPlacehol
 	jvm = append(jvm, "-DFabricMcEmu=net.minecraft.client.main.Main") //TODO: dynamic ADD FABRIC JVM OPT
 	if opts.MaxRam > 0 {
 		if opts.MaxRam%1024 != 0 {
-			if opts.MaxRam <= 1024 {
-				opts.MaxRam = 1024
+			if opts.MaxRam <= 2048 {
+				opts.MaxRam = 2048
 			} else {
 				opts.MaxRam = opts.MaxRam - opts.MaxRam%1024 // Align to 1024
 			}
