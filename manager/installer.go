@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 const fabricUrl = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.11.0/fabric-installer-0.11.0.jar"
@@ -137,6 +138,23 @@ func downloadFabric() (string, error) {
 	return h.Name(), nil
 }
 
+func checkJava() error {
+	required := "17.0.0"
+	cmd := exec.Command("java", "--version")
+	o, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.New("invalid java on machine, required version: >=" + required + " current version: " + "n/a")
+	}
+	str := string(o)
+	words := strings.Split(str, " ")
+	version := words[1]
+	fmt.Println(version)
+	if !CompareVersion("17.0.0", version, PrecisionFull) {
+		return errors.New("invalid java on machine, required version: >=" + required + " current version: " + version)
+	}
+	return nil
+}
+
 func installFabric(installer string, dir string, version string) error {
 	if _, err := os.Stat(dir); err != nil {
 		err := os.MkdirAll(dir, os.ModePerm)
@@ -150,9 +168,12 @@ func installFabric(installer string, dir string, version string) error {
 
 	//b, _ := cmd.CombinedOutput()
 	//fmt.Println(string(b))
-	_ = cmd.Run() //FIXME: ignored, but check java first
-
-	return nil
+	if err := checkJava(); err == nil {
+		_ = cmd.Run()
+		return nil
+	} else {
+		return err
+	}
 }
 
 func downloadAssets(version Version) ([]string, error) {

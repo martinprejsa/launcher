@@ -151,6 +151,10 @@ func CreateProfile(kind string) error {
 }
 
 func (a *LauncherProfile) Launch(auth LauncherAuth, settings LauncherClientSettings) error {
+	if err := checkJava(); err != nil {
+		return err
+	}
+
 	if len(a.VerifyAssets())+len(a.VerifyLibraries()) != 0 {
 		return errors.New("failed to verify game files, please reinstall")
 	}
