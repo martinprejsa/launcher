@@ -156,6 +156,7 @@ func (a *LauncherProfile) Launch(auth LauncherAuth, settings LauncherClientSetti
 	}
 
 	if len(a.VerifyAssets())+len(a.VerifyLibraries()) != 0 {
+		logging.Logger.Fatal("failed to verify game files, please reinstall")
 		return errors.New("failed to verify game files, please reinstall")
 	}
 	parseFabricManifest := func() map[string]interface{} {
@@ -220,5 +221,8 @@ func (a *LauncherProfile) Launch(auth LauncherAuth, settings LauncherClientSetti
 
 	//TODO: log command
 	err := cmd.Run()
+	if err != nil {
+		logging.Logger.Fatal("failed to launch game, cause by: " + err.Error())
+	}
 	return err
 }
