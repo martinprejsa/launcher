@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	url         = "http://localhost:8549/asset/"
+	url         = "https://bc97-78-98-240-12.eu.ngrok.io/asset/"
 	indexUrl    = url + "index/"
 	previewUrlF = url + "preview/%s/%s"
 )
